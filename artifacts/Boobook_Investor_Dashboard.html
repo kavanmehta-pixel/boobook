@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Boobook — Northern Approaches Maritime Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --void: #020b12;
+    --deep: #071520;
+    --hull: #0c2033;
+    --panel: #0f2840;
+    --rail: #1a3a55;
+    --muted: #4a6d84;
+    --ghost: #7a9db5;
+    --text: #c8dde8;
+    --bright: #e8f4fb;
+    --signal: #00d4b8;
+    --signal-dim: rgba(0,212,184,0.12);
+    --warn: #ff6b35;
+    --warn-dim: rgba(255,107,53,0.12);
+    --amber: #f5a623;
+    --amber-dim: rgba(245,166,35,0.12);
+    --clear: #22c55e;
+    --clear-dim: rgba(34,197,94,0.1);
+    --r: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--void); color: var(--text); font-family: 'Space Grotesk', sans-serif; font-size: 13px; line-height: 1.5; overflow: hidden; }
+
+  /* ── Layout ── */
+  .app { display: grid; grid-template-rows: 52px 1fr; grid-template-columns: 300px 1fr 320px; height: 100vh; }
+  header { grid-column: 1/-1; display: flex; align-items: center; gap: 16px; padding: 0 20px; background: var(--deep); border-bottom: 1px solid var(--rail); }
+  .logo { font-family: 'Space Mono', monospace; font-size: 16px; font-weight: 700; color: var(--signal); letter-spacing: 3px; }
+  .logo-sub { color: var(--muted); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
+  .mode-badge { margin-left: auto; background: var(--amber-dim); border: 1px solid var(--amber); color: var(--amber); font-size: 10px; font-family: 'Space Mono', monospace; padding: 4px 10px; border-radius: 3px; letter-spacing: 1px; }
+  .ts { color: var(--muted); font-family: 'Space Mono', monospace; font-size: 10px; }
+
+  /* ── Left panel ── */
+  .left { background: var(--deep); border-right: 1px solid var(--rail); overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+
+  /* ── Map ── */
+  #map { background: #06121f; }
+  .leaflet-container { background: #06121f !important; }
+
+  /* ── Right panel ── */
+  .right { background: var(--deep); border-left: 1px solid var(--rail); overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+
+  /* ── Cards ── */
+  .card { background: var(--hull); border: 1px solid var(--rail); border-radius: var(--r); padding: 14px; }
+  .card-title { font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .card-title::before { content: ''; display: inline-block; width: 4px; height: 4px; background: var(--signal); border-radius: 50%; }
+
+  /* ── KPI grid ── */
+  .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .kpi { background: var(--panel); border: 1px solid var(--rail); border-radius: 4px; padding: 10px 12px; }
+  .kpi-val { font-family: 'Space Mono', monospace; font-size: 22px; font-weight: 700; color: var(--signal); line-height: 1; margin-bottom: 3px; }
+  .kpi-val.warn { color: var(--warn); }
+  .kpi-val.amber { color: var(--amber); }
+  .kpi-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* ── Alert list ── */
+  .alert-item { padding: 10px; border-radius: 4px; border: 1px solid var(--rail); background: var(--panel); margin-bottom: 6px; cursor: pointer; transition: border-color .15s; }
+  .alert-item:hover { border-color: var(--signal); }
+  .alert-item.active { border-color: var(--signal); background: var(--signal-dim); }
+  .alert-header { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+  .sev { font-size: 9px; font-family: 'Space Mono', monospace; font-weight: 700; padding: 2px 7px; border-radius: 2px; letter-spacing: 1px; }
+  .sev.HIGH { background: var(--warn-dim); color: var(--warn); border: 1px solid rgba(255,107,53,.3); }
+  .sev.MEDIUM { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,166,35,.3); }
+  .sev.LOW { background: var(--clear-dim); color: var(--clear); border: 1px solid rgba(34,197,94,.25); }
+  .alert-type { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--muted); }
+  .alert-score { margin-left: auto; font-family: 'Space Mono', monospace; font-size: 11px; color: var(--ghost); }
+  .alert-title { font-size: 12px; font-weight: 600; color: var(--bright); margin-bottom: 3px; }
+  .alert-vessel { font-size: 11px; color: var(--ghost); }
+
+  /* ── Detail panel ── */
+  .detail-box { background: var(--panel); border: 1px solid var(--signal); border-radius: var(--r); padding: 14px; display: none; }
+  .detail-box.visible { display: block; }
+  .detail-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 5px 0; border-bottom: 1px solid var(--rail); font-size: 11px; gap: 10px; }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-key { color: var(--muted); font-family: 'Space Mono', monospace; font-size: 10px; flex-shrink: 0; }
+  .detail-val { color: var(--bright); text-align: right; }
+  .detail-explain { font-size: 11px; color: var(--ghost); line-height: 1.5; margin: 8px 0; padding: 8px; background: var(--hull); border-radius: 4px; border-left: 2px solid var(--signal); }
+  .detail-action { font-size: 11px; color: var(--amber); line-height: 1.5; margin: 8px 0; padding: 8px; background: var(--hull); border-radius: 4px; border-left: 2px solid var(--amber); }
+
+  /* ── Vessel table ── */
+  .vessel-row { display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 4px; border: 1px solid transparent; cursor: pointer; margin-bottom: 3px; }
+  .vessel-row:hover { background: var(--panel); border-color: var(--rail); }
+  .risk-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .vessel-name { font-weight: 600; color: var(--bright); font-size: 12px; flex: 1; }
+  .vessel-type { font-size: 10px; color: var(--muted); }
+  .vessel-score { font-family: 'Space Mono', monospace; font-size: 11px; }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 4px; } ::-webkit-scrollbar-track { background: var(--deep); } ::-webkit-scrollbar-thumb { background: var(--rail); border-radius: 2px; }
+
+  /* ── Legend ── */
+  .legend { background: var(--hull) !important; border: 1px solid var(--rail) !important; color: var(--text) !important; border-radius: var(--r) !important; padding: 8px 12px !important; font-family: 'Space Grotesk', sans-serif !important; font-size: 11px !important; }
+  .legend-item { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+
+  /* ── Type filter ── */
+  .filter-btn { font-family: 'Space Mono', monospace; font-size: 9px; padding: 3px 8px; border-radius: 3px; border: 1px solid var(--rail); background: transparent; color: var(--muted); cursor: pointer; letter-spacing: 1px; transition: all .15s; }
+  .filter-btn.active { background: var(--signal-dim); border-color: var(--signal); color: var(--signal); }
+  .filter-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+
+  /* ── Caveat banner ── */
+  .caveat { background: rgba(245,166,35,.06); border: 1px solid rgba(245,166,35,.2); border-radius: var(--r); padding: 8px 12px; font-size: 10px; color: var(--amber); line-height: 1.5; }
+  .caveat b { display: block; margin-bottom: 2px; letter-spacing: .5px; font-family: 'Space Mono', monospace; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <div>
+    <div class="logo">BOOBOOK</div>
+    <div class="logo-sub">Northern Approaches · Maritime Intelligence Layer</div>
+  </div>
+  <div style="width:1px;height:30px;background:var(--rail);margin:0 8px;"></div>
+  <div style="font-size:11px;color:var(--ghost);">AIS source-data validation · <span style="color:var(--amber);">RF layer: next milestone</span></div>
+  <div class="mode-badge">⚠ SYNTHETIC DATA — AIS-ONLY MVP</div>
+  <div class="ts" id="ts-display"></div>
+</header>
+
+<aside class="left">
+
+  <div class="card">
+    <div class="card-title">Intelligence Summary</div>
+    <div class="kpi-grid" id="kpi-grid">
+      <div class="kpi"><div class="kpi-val" id="k-vessels">-</div><div class="kpi-label">Vessels</div></div>
+      <div class="kpi"><div class="kpi-val warn" id="k-alerts">-</div><div class="kpi-label">Alerts</div></div>
+      <div class="kpi"><div class="kpi-val warn" id="k-high">-</div><div class="kpi-label">High Risk</div></div>
+      <div class="kpi"><div class="kpi-val amber" id="k-medium">-</div><div class="kpi-label">Medium</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Vessel Risk Register</div>
+    <div id="vessel-list"></div>
+  </div>
+
+  <div class="card caveat">
+    <b>⚠ SCOPE LIMITATIONS</b>
+    AIS anomalies are not proof of illegal activity. This MVP uses synthetic data. Passive RF detection (the next validation layer) is not shown here.
+  </div>
+
+</aside>
+
+<div id="map"></div>
+
+<aside class="right">
+
+  <div class="card">
+    <div class="card-title">Alert Queue</div>
+    <div class="filter-row" id="filter-row"></div>
+    <div id="alert-list"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Alert Detail</div>
+    <div id="detail-placeholder" style="color:var(--muted);font-size:11px;padding:8px 0;">Select an alert to inspect.</div>
+    <div class="detail-box" id="detail-box"></div>
+  </div>
+
+  <div class="card" style="font-size:11px;color:var(--muted);">
+    <div class="card-title">RF Roadmap</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="color:var(--signal);font-family:'Space Mono',monospace;font-size:10px;flex-shrink:0;margin-top:1px;">✓ NOW</span>
+        <span style="color:var(--ghost);">AIS source-data validation — gaps, speed, loitering, rendezvous</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="color:var(--amber);font-family:'Space Mono',monospace;font-size:10px;flex-shrink:0;margin-top:1px;">→ NEXT</span>
+        <span>Live AIS/VHF capture via RTL-SDR · Sydney Harbour proof</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;flex-shrink:0;margin-top:1px;">◦ P2</span>
+        <span>3-node TDOA controlled test · validated error budget</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start;">
+        <span style="color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;flex-shrink:0;margin-top:1px;">◦ P3</span>
+        <span>Choke-point deployment · RF+AIS fusion alerts · AFMA pilot</span>
+      </div>
+    </div>
+  </div>
+
+</aside>
+</div>
+
+<script>
+const ALERTS = [{"alert_id": "BKB-0001", "alert_type": "IMPOSSIBLE_SPEED", "severity": "HIGH", "risk_score": 98, "mmsi": "503001004", "timestamp": "2026-05-01T00:45:00+00:00", "lat": -11.8, "lon": 143.6, "vessel_name": "SEA EAGLE", "vessel_type": "Cargo", "title": "Implied speed 442 kn \u2014 possible spoofing", "explanation": "Successive AIS positions imply a physically impossible speed, strongly suggesting AIS position spoofing, a false-identity broadcast, or a track-stitching error merging two different vessels.", "recommended_action": "Inspect raw source rows. Compare against alternative AIS feeds, RF/SAR/patrol data. Do not assume identity continuity across this jump.", "evidence": "Implied speed 442.4 kn between 2026-05-01T00:30:00+00:00 and 2026-05-01T00:45:00+00:00."}, {"alert_id": "BKB-0001", "alert_type": "AIS_GAP", "severity": "HIGH", "risk_score": 95, "mmsi": "503001003", "timestamp": "2026-05-01T11:15:00+00:00", "lat": -10.54871, "lon": 142.5759, "vessel_name": "NORTHERN PRIDE", "vessel_type": "Fishing", "title": "AIS gap of 10.0 h", "explanation": "The vessel disappeared from the AIS source feed for longer than the configured threshold. This may indicate intentional disabling, poor coverage, equipment failure, or small-vessel below-threshold operation.", "recommended_action": "Review track before/after gap; cross-check RF, SAR, patrol and VMS sources. Note whether the gap area coincides with known IUU activity.", "evidence": "Previous point 2026-05-01T01:15:00+00:00 \u2192 current point 2026-05-01T11:15:00+00:00 (10.0 h silence)."}, {"alert_id": "BKB-0004", "alert_type": "AIS_GAP", "severity": "HIGH", "risk_score": 95, "mmsi": "503001007", "timestamp": "2026-05-01T18:00:00+00:00", "lat": -10.296, "lon": 142.486, "vessel_name": "SMALL VESSEL", "vessel_type": "Fishing", "title": "AIS gap of 9.0 h", "explanation": "The vessel disappeared from the AIS source feed for longer than the configured threshold. This may indicate intentional disabling, poor coverage, equipment failure, or small-vessel below-threshold operation.", "recommended_action": "Review track before/after gap; cross-check RF, SAR, patrol and VMS sources. Note whether the gap area coincides with known IUU activity.", "evidence": "Previous point 2026-05-01T09:00:00+00:00 \u2192 current point 2026-05-01T18:00:00+00:00 (9.0 h silence)."}, {"alert_id": "BKB-0005", "alert_type": "AIS_GAP", "severity": "HIGH", "risk_score": 95, "mmsi": "503001007", "timestamp": "2026-05-02T02:00:00+00:00", "lat": -10.272, "lon": 142.502, "vessel_name": "SMALL VESSEL", "vessel_type": "Fishing", "title": "AIS gap of 8.0 h", "explanation": "The vessel disappeared from the AIS source feed for longer than the configured threshold. This may indicate intentional disabling, poor coverage, equipment failure, or small-vessel below-threshold operation.", "recommended_action": "Review track before/after gap; cross-check RF, SAR, patrol and VMS sources. Note whether the gap area coincides with known IUU activity.", "evidence": "Previous point 2026-05-01T18:00:00+00:00 \u2192 current point 2026-05-02T02:00:00+00:00 (8.0 h silence)."}, {"alert_id": "BKB-0003", "alert_type": "AIS_GAP", "severity": "HIGH", "risk_score": 86, "mmsi": "503001007", "timestamp": "2026-05-01T09:00:00+00:00", "lat": -10.323, "lon": 142.468, "vessel_name": "SMALL VESSEL", "vessel_type": "Fishing", "title": "AIS gap of 5.0 h", "explanation": "The vessel disappeared from the AIS source feed for longer than the configured threshold. This may indicate intentional disabling, poor coverage, equipment failure, or small-vessel below-threshold operation.", "recommended_action": "Review track before/after gap; cross-check RF, SAR, patrol and VMS sources. Note whether the gap area coincides with known IUU activity.", "evidence": "Previous point 2026-05-01T04:00:00+00:00 \u2192 current point 2026-05-01T09:00:00+00:00 (5.0 h silence)."}, {"alert_id": "BKB-0001", "alert_type": "LOITERING", "severity": "HIGH", "risk_score": 84, "mmsi": "503001002", "timestamp": "2026-05-01T04:45:00+00:00", "lat": -10.81571, "lon": 141.96959, "vessel_name": "MALITA SEA", "vessel_type": "Fishing", "title": "Loitering 4.8 h within 3.7 km", "explanation": "The vessel remains inside a small geographic radius at low average speed for a sustained period. In northern Australian waters, this pattern is consistent with IUU fishing activity or sea-cucumber harvesting.", "recommended_action": "Check whether the area is consistent with a licensed fishing zone, anchorage, or known permitted activity. Cross-reference against AFMA authorisation records and VMS data if available.", "evidence": "Span 4.8 h; max radius from centroid 3.68 km; avg SOG 1.1 kn."}, {"alert_id": "BKB-0002", "alert_type": "RENDEZVOUS_CANDIDATE", "severity": "MEDIUM", "risk_score": 78, "mmsi": "503001005|503001006", "timestamp": "2026-05-01T00:30:00+00:00", "lat": -10.621, "lon": 142.215, "vessel_name": "TIMOR CHIEF / CAPE WESSEL", "vessel_type": "Fishing / Fishing", "title": "Possible vessel rendezvous", "explanation": "Two vessels appear within the configured distance/time window. Vessel-to-vessel transfers at sea (catch, fuel, crew) are a known IUU evasion method when both parties then depart separately.", "recommended_action": "Check vessel types, flag states, licensed activity, and AIS gap history for both parties. Note whether either vessel has prior alerts.", "evidence": "503001005 / 503001006; separation 1.12 km; time delta 30.0 min."}, {"alert_id": "BKB-0002", "alert_type": "AIS_GAP", "severity": "MEDIUM", "risk_score": 78, "mmsi": "503001007", "timestamp": "2026-05-01T04:00:00+00:00", "lat": -10.338, "lon": 142.458, "vessel_name": "SMALL VESSEL", "vessel_type": "Fishing", "title": "AIS gap of 4.0 h", "explanation": "The vessel disappeared from the AIS source feed for longer than the configured threshold. This may indicate intentional disabling, poor coverage, equipment failure, or small-vessel below-threshold operation.", "recommended_action": "Review track before/after gap; cross-check RF, SAR, patrol and VMS sources. Note whether the gap area coincides with known IUU activity.", "evidence": "Previous point 2026-05-01T00:00:00+00:00 \u2192 current point 2026-05-01T04:00:00+00:00 (4.0 h silence)."}, {"alert_id": "BKB-0001", "alert_type": "RENDEZVOUS_CANDIDATE", "severity": "MEDIUM", "risk_score": 65, "mmsi": "503001001|503001006", "timestamp": "2026-05-01T00:30:00+00:00", "lat": -10.64016, "lon": 142.205955, "vessel_name": "ARAFURA QUEEN / CAPE WESSEL", "vessel_type": "Fishing / Cargo", "title": "Possible vessel rendezvous", "explanation": "Two vessels appear within the configured distance/time window. Vessel-to-vessel transfers at sea (catch, fuel, crew) are a known IUU evasion method when both parties then depart separately.", "recommended_action": "Check vessel types, flag states, licensed activity, and AIS gap history for both parties. Note whether either vessel has prior alerts.", "evidence": "503001001 / 503001006; separation 1.30 km; time delta 30.0 min."}, {"alert_id": "BKB-0001", "alert_type": "SENSITIVE_ZONE", "severity": "LOW", "risk_score": 52, "mmsi": "503001006", "timestamp": "2026-05-01T02:45:00+00:00", "lat": -10.541, "lon": 142.255, "vessel_name": "CAPE WESSEL", "vessel_type": "Fishing", "title": "Presence inside Torres Strait illustrative fisheries focus area", "explanation": "The vessel is inside an illustrative monitoring zone. This is contextual enrichment, not an allegation of wrongdoing.", "recommended_action": "Use as a contextual feature alongside gap/loitering/rendezvous alerts rather than as a standalone escalation trigger.", "evidence": "Distance to zone centre 7.5 km; zone radius 80.0 km."}, {"alert_id": "BKB-0002", "alert_type": "SENSITIVE_ZONE", "severity": "LOW", "risk_score": 52, "mmsi": "503001005", "timestamp": "2026-05-01T02:45:00+00:00", "lat": -10.532, "lon": 142.275, "vessel_name": "TIMOR CHIEF", "vessel_type": "Fishing", "title": "Presence inside Torres Strait illustrative fisheries focus area", "explanation": "The vessel is inside an illustrative monitoring zone. This is contextual enrichment, not an allegation of wrongdoing.", "recommended_action": "Use as a contextual feature alongside gap/loitering/rendezvous alerts rather than as a standalone escalation trigger.", "evidence": "Distance to zone centre 8.9 km; zone radius 80.0 km."}, {"alert_id": "BKB-0003", "alert_type": "SENSITIVE_ZONE", "severity": "LOW", "risk_score": 52, "mmsi": "503001002", "timestamp": "2026-05-01T04:45:00+00:00", "lat": -10.81571, "lon": 141.96959, "vessel_name": "MALITA SEA", "vessel_type": "Fishing", "title": "Presence inside Torres Strait illustrative fisheries focus area", "explanation": "The vessel is inside an illustrative monitoring zone. This is contextual enrichment, not an allegation of wrongdoing.", "recommended_action": "Use as a contextual feature alongside gap/loitering/rendezvous alerts rather than as a standalone escalation trigger.", "evidence": "Distance to zone centre 43.2 km; zone radius 80.0 km."}, {"alert_id": "BKB-0004", "alert_type": "SENSITIVE_ZONE", "severity": "LOW", "risk_score": 52, "mmsi": "503001003", "timestamp": "2026-05-01T13:00:00+00:00", "lat": -10.54733, "lon": 142.57969, "vessel_name": "NORTHERN PRIDE", "vessel_type": "Fishing", "title": "Presence inside Torres Strait illustrative fisheries focus area", "explanation": "The vessel is inside an illustrative monitoring zone. This is contextual enrichment, not an allegation of wrongdoing.", "recommended_action": "Use as a contextual feature alongside gap/loitering/rendezvous alerts rather than as a standalone escalation trigger.", "evidence": "Distance to zone centre 41.8 km; zone radius 80.0 km."}, {"alert_id": "BKB-0005", "alert_type": "SENSITIVE_ZONE", "severity": "LOW", "risk_score": 52, "mmsi": "503001007", "timestamp": "2026-05-02T02:00:00+00:00", "lat": -10.272, "lon": 142.502, "vessel_name": "SMALL VESSEL", "vessel_type": "Fishing", "title": "Presence inside Torres Strait illustrative fisheries focus area", "explanation": "The vessel is inside an illustrative monitoring zone. This is contextual enrichment, not an allegation of wrongdoing.", "recommended_action": "Use as a contextual feature alongside gap/loitering/rendezvous alerts rather than as a standalone escalation trigger.", "evidence": "Distance to zone centre 41.6 km; zone radius 80.0 km."}];
+const VESSELS = [{"mmsi": 503001004, "vessel_name": "SEA EAGLE", "vessel_type": "Cargo", "positions": 4, "first_seen": "2026-05-01T00:00:00+00:00", "last_seen": "2026-05-01T02:00:00+00:00", "last_lat": -11.82, "last_lon": 143.75, "risk_score": 98}, {"mmsi": 503001007, "vessel_name": "SMALL VESSEL", "vessel_type": "Fishing", "positions": 5, "first_seen": "2026-05-01T00:00:00+00:00", "last_seen": "2026-05-02T02:00:00+00:00", "last_lat": -10.272, "last_lon": 142.502, "risk_score": 95}, {"mmsi": 503001003, "vessel_name": "NORTHERN PRIDE", "vessel_type": "Fishing", "positions": 14, "first_seen": "2026-05-01T00:00:00+00:00", "last_seen": "2026-05-01T13:00:00+00:00", "last_lat": -10.54733, "last_lon": 142.57969, "risk_score": 95}, {"mmsi": 503001002, "vessel_name": "MALITA SEA", "vessel_type": "Fishing", "positions": 20, "first_seen": "2026-05-01T00:00:00+00:00", "last_seen": "2026-05-01T04:45:00+00:00", "last_lat": -10.81571, "last_lon": 141.96959, "risk_score": 84}, {"mmsi": 503001005, "vessel_name": "TIMOR CHIEF", "vessel_type": "Fishing", "positions": 12, "first_seen": "2026-05-01T00:00:00+00:00", "last_seen": "2026-05-01T02:45:00+00:00", "last_lat": -10.532, "last_lon": 142.275, "risk_score": 78}, {"mmsi": 503001006, "vessel_name": "CAPE WESSEL", "vessel_type": "Fishing", "positions": 12, "first_seen": "2026-05-01T00:00:00+00:00", "last_seen": "2026-05-01T02:45:00+00:00", "last_lat": -10.541, "last_lon": 142.255, "risk_score": 78}, {"mmsi": 503001001, "vessel_name": "ARAFURA QUEEN", "vessel_type": "Cargo", "positions": 32, "first_seen": "2026-05-01T00:00:00+00:00", "last_seen": "2026-05-01T07:45:00+00:00", "last_lat": -10.64173, "last_lon": 143.83526, "risk_score": 65}, {"mmsi": 503001008, "vessel_name": "ACV TRITON", "vessel_type": "Law Enforcement", "positions": 24, "first_seen": "2026-05-01T00:00:00+00:00", "last_seen": "2026-05-01T07:40:00+00:00", "last_lat": -8.67664, "last_lon": 142.90267, "risk_score": 0}, {"mmsi": 512001001, "vessel_name": "PACIFIC DAWN", "vessel_type": "Fishing", "positions": 10, "first_seen": "2026-05-01T00:00:00+00:00", "last_seen": "2026-05-01T04:30:00+00:00", "last_lat": -11.392, "last_lon": 141.762, "risk_score": 0}];
+const TRACKS = {"type": "FeatureCollection", "features": [{"type": "Feature", "properties": {"mmsi": "503001001", "vessel_name": "ARAFURA QUEEN", "vessel_type": "Cargo", "risk_score": 65}, "geometry": {"type": "LineString", "coordinates": [[142.09896, -10.6397], [142.15466, -10.64195], [142.21191, -10.64032], [142.26795, -10.63922], [142.32299, -10.63953], [142.37976, -10.63912], [142.437, -10.64068], [142.49227, -10.64035], [142.54813, -10.63959], [142.60285, -10.64051], [142.65951, -10.63887], [142.71633, -10.63935], [142.77178, -10.64067], [142.82773, -10.63913], [142.88376, -10.63993], [142.93896, -10.64032], [142.99689, -10.64028], [143.05102, -10.64168], [143.10803, -10.63941], [143.16414, -10.64046], [143.21811, -10.64128], [143.2759, -10.63986], [143.33179, -10.63984], [143.38677, -10.64066], [143.44358, -10.6412], [143.4995, -10.63952], [143.55459, -10.6401], [143.60966, -10.64145], [143.66604, -10.6396], [143.72364, -10.64036], [143.77792, -10.64021], [143.83526, -10.64173]]}}, {"type": "Feature", "properties": {"mmsi": "503001002", "vessel_name": "MALITA SEA", "vessel_type": "Fishing", "risk_score": 84}, "geometry": {"type": "LineString", "coordinates": [[141.92831, -10.82891], [141.95033, -10.81651], [141.93465, -10.82359], [141.96253, -10.79961], [141.93217, -10.79805], [141.92935, -10.82585], [141.92794, -10.82333], [141.97995, -10.80743], [141.93516, -10.81378], [141.94377, -10.83219], [141.96599, -10.82211], [141.92488, -10.83553], [141.97652, -10.82081], [141.93223, -10.82749], [141.98193, -10.83088], [141.96397, -10.83354], [141.94939, -10.82235], [141.93162, -10.82682], [141.97369, -10.81741], [141.96959, -10.81571]]}}, {"type": "Feature", "properties": {"mmsi": "503001003", "vessel_name": "NORTHERN PRIDE", "vessel_type": "Fishing", "risk_score": 95}, "geometry": {"type": "LineString", "coordinates": [[141.80111, -11.20041], [141.82765, -11.18661], [141.85947, -11.17194], [141.8855, -11.15892], [141.91509, -11.14653], [141.94575, -11.13363], [142.5759, -10.54871], [142.57831, -10.5501], [142.57824, -10.55244], [142.58183, -10.55067], [142.58006, -10.55265], [142.57934, -10.55097], [142.58108, -10.54799], [142.57969, -10.54733]]}}, {"type": "Feature", "properties": {"mmsi": "503001004", "vessel_name": "SEA EAGLE", "vessel_type": "Cargo", "risk_score": 98}, "geometry": {"type": "LineString", "coordinates": [[142.1, -10.5], [142.25, -10.52], [143.6, -11.8], [143.75, -11.82]]}}, {"type": "Feature", "properties": {"mmsi": "503001005", "vessel_name": "TIMOR CHIEF", "vessel_type": "Fishing", "risk_score": 78}, "geometry": {"type": "LineString", "coordinates": [[142.22, -10.62], [142.225, -10.612], [142.23, -10.604], [142.235, -10.596], [142.24, -10.588], [142.245, -10.58], [142.25, -10.572], [142.255, -10.564], [142.26, -10.556], [142.265, -10.548], [142.27, -10.54], [142.275, -10.532]]}}, {"type": "Feature", "properties": {"mmsi": "503001006", "vessel_name": "CAPE WESSEL", "vessel_type": "Fishing", "risk_score": 78}, "geometry": {"type": "LineString", "coordinates": [[142.2, -10.64], [142.205, -10.631], [142.21, -10.622], [142.215, -10.613], [142.22, -10.604], [142.225, -10.595], [142.23, -10.586], [142.235, -10.577], [142.24, -10.568], [142.245, -10.559], [142.25, -10.55], [142.255, -10.541]]}}, {"type": "Feature", "properties": {"mmsi": "503001007", "vessel_name": "SMALL VESSEL", "vessel_type": "Fishing", "risk_score": 95}, "geometry": {"type": "LineString", "coordinates": [[142.45, -10.35], [142.458, -10.338], [142.468, -10.323], [142.486, -10.296], [142.502, -10.272]]}}, {"type": "Feature", "properties": {"mmsi": "503001008", "vessel_name": "ACV TRITON", "vessel_type": "Law Enforcement", "risk_score": 0}, "geometry": {"type": "LineString", "coordinates": [[142.29978, -10.9007], [142.32645, -10.80449], [142.35458, -10.7043], [142.37846, -10.61169], [142.40465, -10.51242], [142.43064, -10.4172], [142.45792, -10.32132], [142.48304, -10.22172], [142.51353, -10.12542], [142.53865, -10.03033], [142.56398, -9.93432], [142.5881, -9.83762], [142.61598, -9.74116], [142.64216, -9.64328], [142.66826, -9.54765], [142.6966, -9.45121], [142.71998, -9.35413], [142.74745, -9.25766], [142.77365, -9.16041], [142.79946, -9.06448], [142.82537, -8.96825], [142.85159, -8.87412], [142.87765, -8.77467], [142.90267, -8.67664]]}}, {"type": "Feature", "properties": {"mmsi": "512001001", "vessel_name": "PACIFIC DAWN", "vessel_type": "Fishing", "risk_score": 0}, "geometry": {"type": "LineString", "coordinates": [[141.6, -11.5], [141.618, -11.488], [141.636, -11.476], [141.654, -11.464], [141.672, -11.452], [141.69, -11.44], [141.708, -11.428], [141.726, -11.416], [141.744, -11.404], [141.762, -11.392]]}}]};
+const SUMMARY = {"rows": 133, "vessels": 9, "alerts": 14, "high_alerts": 6, "medium_alerts": 3, "time_min": "2026-05-01T00:00:00+00:00", "time_max": "2026-05-02T02:00:00+00:00", "alert_types": {"AIS_GAP": 5, "SENSITIVE_ZONE": 5, "RENDEZVOUS_CANDIDATE": 2, "IMPOSSIBLE_SPEED": 1, "LOITERING": 1}};
+
+// Severity colour helpers
+const SEV_COLOR = { HIGH:'#ff6b35', MEDIUM:'#f5a623', LOW:'#22c55e' };
+const TYPE_ICON = {
+  AIS_GAP: '⬜', IMPOSSIBLE_SPEED: '⚡', LOITERING: '⟳',
+  RENDEZVOUS_CANDIDATE: '⇌', SENSITIVE_ZONE: '◉'
+};
+
+// ── KPIs ──
+document.getElementById('k-vessels').textContent = SUMMARY.vessels;
+document.getElementById('k-alerts').textContent = SUMMARY.alerts;
+document.getElementById('k-high').textContent = SUMMARY.high_alerts;
+document.getElementById('k-medium').textContent = SUMMARY.medium_alerts;
+document.getElementById('ts-display').textContent =
+  SUMMARY.time_min.slice(0,10) + ' → ' + SUMMARY.time_max.slice(0,10);
+
+// ── Map ──
+const map = L.map('map', { center:[-10.8, 142.5], zoom: 7, zoomControl: false });
+L.control.zoom({ position:'bottomright' }).addTo(map);
+
+// Satellite-style dark basemap
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+  attribution:'&copy; OpenStreetMap &copy; CARTO',
+  subdomains:'abcd', maxZoom:19
+}).addTo(map);
+
+// Draw tracks
+const riskColor = s => s >= 80 ? '#ff6b35' : s >= 55 ? '#f5a623' : '#22c55e';
+const trackLayers = {};
+TRACKS.features.forEach(f => {
+  const mmsi = f.properties.mmsi;
+  const score = f.properties.risk_score;
+  const coords = f.geometry.coordinates.map(c => [c[1], c[0]]);
+  if (coords.length < 2) return;
+  const line = L.polyline(coords, {
+    color: riskColor(score), weight: score >= 80 ? 2.5 : 1.5,
+    opacity: score >= 80 ? 0.9 : 0.6, dashArray: score < 30 ? '4 4' : null
+  }).addTo(map);
+  // End marker
+  const last = coords[coords.length - 1];
+  const marker = L.circleMarker(last, {
+    radius: score >= 80 ? 7 : 5,
+    fillColor: riskColor(score), color: '#000', weight: 1,
+    fillOpacity: 0.9
+  }).addTo(map);
+  marker.bindTooltip(`<b>${f.properties.vessel_name}</b><br>MMSI ${mmsi}<br>Risk ${score}`, {
+    className: 'leaflet-tooltip', direction:'top'
+  });
+  trackLayers[mmsi] = { line, marker };
+});
+
+// Alert markers
+const alertMarkers = [];
+ALERTS.forEach((a, i) => {
+  if (!a.lat || !a.lon) return;
+  const m = L.circleMarker([a.lat, a.lon], {
+    radius: 6, fillColor: SEV_COLOR[a.severity] || '#888',
+    color: '#000', weight: 1, fillOpacity: 0.85
+  }).addTo(map);
+  m.bindPopup(`<div style="font-family:monospace;font-size:11px;color:#ccc">
+    <b style="color:#fff">${a.title}</b><br>
+    ${a.vessel_name} · ${a.alert_type}<br>
+    <span style="color:${SEV_COLOR[a.severity]}">${a.severity}</span> · Score ${a.risk_score}
+  </div>`);
+  alertMarkers.push(m);
+});
+
+// ── Alert list ──
+let activeFilter = 'ALL';
+let activeAlertIdx = -1;
+
+const allTypes = ['ALL', ...Object.keys(SUMMARY.alert_types)];
+const filterRow = document.getElementById('filter-row');
+allTypes.forEach(t => {
+  const btn = document.createElement('button');
+  btn.className = 'filter-btn' + (t === 'ALL' ? ' active' : '');
+  btn.textContent = t === 'ALL' ? 'ALL' : (TYPE_ICON[t] || '') + ' ' + t.replace('_',' ');
+  btn.onclick = () => {
+    activeFilter = t;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderAlerts();
+  };
+  filterRow.appendChild(btn);
+});
+
+function renderAlerts() {
+  const list = document.getElementById('alert-list');
+  list.innerHTML = '';
+  const filtered = activeFilter === 'ALL' ? ALERTS : ALERTS.filter(a => a.alert_type === activeFilter);
+  filtered.forEach((a, i) => {
+    const realIdx = ALERTS.indexOf(a);
+    const div = document.createElement('div');
+    div.className = 'alert-item' + (realIdx === activeAlertIdx ? ' active' : '');
+    div.innerHTML = `
+      <div class="alert-header">
+        <span class="sev ${a.severity}">${a.severity}</span>
+        <span class="alert-type">${TYPE_ICON[a.alert_type] || ''} ${a.alert_type.replace(/_/g,' ')}</span>
+        <span class="alert-score">${a.risk_score}</span>
+      </div>
+      <div class="alert-title">${a.title}</div>
+      <div class="alert-vessel">${a.vessel_name || a.mmsi} · ${a.vessel_type || ''}</div>`;
+    div.onclick = () => selectAlert(realIdx);
+    list.appendChild(div);
+  });
+}
+
+function selectAlert(idx) {
+  activeAlertIdx = idx;
+  renderAlerts();
+  const a = ALERTS[idx];
+  // Pan map
+  if (a.lat && a.lon) map.panTo([a.lat, a.lon], { animate: true, duration: 0.5 });
+  // Detail box
+  const box = document.getElementById('detail-box');
+  document.getElementById('detail-placeholder').style.display = 'none';
+  box.classList.add('visible');
+  box.innerHTML = `
+    <div class="detail-row"><span class="detail-key">ID</span><span class="detail-val">${a.alert_id}</span></div>
+    <div class="detail-row"><span class="detail-key">TYPE</span><span class="detail-val">${a.alert_type.replace(/_/g,' ')}</span></div>
+    <div class="detail-row"><span class="detail-key">SEVERITY</span><span class="detail-val" style="color:${SEV_COLOR[a.severity]}">${a.severity} (${a.risk_score}/100)</span></div>
+    <div class="detail-row"><span class="detail-key">VESSEL</span><span class="detail-val">${a.vessel_name || '—'}</span></div>
+    <div class="detail-row"><span class="detail-key">TYPE</span><span class="detail-val">${a.vessel_type || '—'}</span></div>
+    <div class="detail-row"><span class="detail-key">MMSI</span><span class="detail-val" style="font-family:monospace">${a.mmsi}</span></div>
+    <div class="detail-row"><span class="detail-key">TIME</span><span class="detail-val" style="font-family:monospace">${a.timestamp ? a.timestamp.slice(0,19).replace('T',' ') : '—'}</span></div>
+    <div class="detail-row"><span class="detail-key">POSITION</span><span class="detail-val" style="font-family:monospace">${a.lat ? a.lat.toFixed(4) : '—'}, ${a.lon ? a.lon.toFixed(4) : '—'}</span></div>
+    <div class="detail-explain">${a.explanation}</div>
+    <div class="detail-action"><b style="font-family:monospace;font-size:10px;">RECOMMENDED ACTION</b><br>${a.recommended_action}</div>
+    <div style="font-size:10px;color:var(--muted);margin-top:6px;font-family:monospace">${a.evidence}</div>`;
+}
+
+renderAlerts();
+
+// ── Vessel list ──
+const vesselList = document.getElementById('vessel-list');
+VESSELS.forEach(v => {
+  const score = v.risk_score;
+  const div = document.createElement('div');
+  div.className = 'vessel-row';
+  div.innerHTML = `
+    <div class="risk-dot" style="background:${riskColor(score)}"></div>
+    <div>
+      <div class="vessel-name">${v.vessel_name || v.mmsi}</div>
+      <div class="vessel-type">${v.vessel_type} · MMSI ${v.mmsi}</div>
+    </div>
+    <div class="vessel-score" style="color:${riskColor(score)}">${score}</div>`;
+  div.onclick = () => {
+    map.panTo([v.last_lat, v.last_lon], { animate:true, duration:.5 });
+    // highlight track
+    Object.entries(trackLayers).forEach(([m, l]) => {
+      const isThis = m === v.mmsi;
+      l.line.setStyle({ opacity: isThis ? 1 : 0.2, weight: isThis ? 3 : 1 });
+    });
+  };
+  vesselList.appendChild(div);
+});
+
+// Tooltip style
+const style = document.createElement('style');
+style.textContent = `.leaflet-tooltip { background:#0c2033!important;border:1px solid #1a3a55!important;color:#c8dde8!important;font-family:'Space Grotesk',sans-serif!important;font-size:12px!important;padding:6px 10px!important;box-shadow:none!important; }`;
+document.head.appendChild(style);
+</script>
+</body>
+</html>
