@@ -1,0 +1,816 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Boobook — Sovereign Australian Maritime Intelligence</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
+
+:root{
+  --void:#030d16;--deep:#061523;--hull:#0b1e32;--panel:#0f2640;--rail:#1c3a56;
+  --muted:#4d7090;--ghost:#7da0b8;--text:#c5dce8;--bright:#eaf4fb;
+  --signal:#00c9b0;--signal2:#00a896;--warn:#ff6535;--amber:#f5a623;
+  --clear:#22c55e;--r:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--void);color:var(--text);font-family:'Space Grotesk',sans-serif;font-size:14px;line-height:1.6;overflow-x:hidden}
+
+/* ── Nav ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(3,13,22,.92);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,.06);padding:0 32px;height:56px;display:flex;align-items:center;gap:0}
+.nav-logo{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--signal);letter-spacing:3px;margin-right:40px}
+.nav-links{display:flex;gap:2px;flex:1}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:13px;padding:6px 14px;border-radius:4px;transition:color .15s,background .15s;letter-spacing:.3px}
+.nav-links a:hover{color:var(--bright);background:rgba(255,255,255,.05)}
+.nav-cta{font-family:'Space Mono',monospace;font-size:11px;letter-spacing:1.5px;padding:8px 18px;border:1px solid var(--signal);color:var(--signal);border-radius:4px;text-decoration:none;transition:background .15s}
+.nav-cta:hover{background:rgba(0,201,176,.1)}
+
+/* ── Hero ── */
+#hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:100px 64px 80px;position:relative;overflow:hidden}
+.hero-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;max-width:1200px;margin:0 auto;width:100%}
+.hero-eyebrow{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--signal);text-transform:uppercase;margin-bottom:20px}
+.hero-title{font-size:clamp(36px,5vw,64px);font-weight:700;line-height:1.1;color:var(--bright);margin-bottom:24px}
+.hero-title em{font-style:normal;color:var(--signal)}
+.hero-sub{font-size:17px;color:var(--ghost);line-height:1.7;max-width:480px;margin-bottom:40px}
+.hero-actions{display:flex;gap:14px;flex-wrap:wrap}
+.btn-primary{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:1.5px;padding:14px 28px;background:var(--signal);color:var(--void);border:none;border-radius:4px;cursor:pointer;text-decoration:none;transition:opacity .15s;font-weight:700}
+.btn-primary:hover{opacity:.88}
+.btn-ghost{font-family:'Space Mono',monospace;font-size:12px;letter-spacing:1.5px;padding:14px 28px;border:1px solid rgba(255,255,255,.15);color:var(--text);border-radius:4px;cursor:pointer;text-decoration:none;transition:border-color .15s,color .15s}
+.btn-ghost:hover{border-color:var(--signal);color:var(--signal)}
+.hero-stats{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.stat-card{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.07);border-radius:var(--r);padding:20px}
+.stat-val{font-family:'Space Mono',monospace;font-size:28px;font-weight:700;color:var(--signal);line-height:1;margin-bottom:6px}
+.stat-label{font-size:12px;color:var(--muted);line-height:1.4}
+
+/* ── Map section ── */
+#map-section{padding:80px 64px;background:var(--deep)}
+.section-tag{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:3px;color:var(--signal);text-transform:uppercase;margin-bottom:14px}
+.section-title{font-size:clamp(24px,3vw,38px);font-weight:700;color:var(--bright);margin-bottom:12px;line-height:1.2}
+.section-sub{font-size:15px;color:var(--ghost);max-width:640px;margin-bottom:40px;line-height:1.7}
+#map{height:520px;border-radius:12px;border:1px solid var(--rail);overflow:hidden}
+.map-legend{display:flex;gap:20px;margin-top:16px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ghost)}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* ── How it works ── */
+#how{padding:80px 64px;max-width:1200px;margin:0 auto}
+.steps-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:40px}
+.step-card{background:var(--hull);border:1px solid var(--rail);border-radius:12px;padding:24px;position:relative;overflow:hidden}
+.step-card::before{content:attr(data-n);font-family:'Space Mono',monospace;font-size:48px;font-weight:700;color:rgba(0,201,176,.06);position:absolute;top:12px;right:16px;line-height:1}
+.step-icon{width:36px;height:36px;background:rgba(0,201,176,.1);border:1px solid rgba(0,201,176,.2);border-radius:6px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;font-size:18px}
+.step-title{font-size:14px;font-weight:600;color:var(--bright);margin-bottom:8px}
+.step-body{font-size:12px;color:var(--ghost);line-height:1.6}
+.step-tech{margin-top:12px;font-family:'Space Mono',monospace;font-size:10px;color:var(--signal);letter-spacing:.5px}
+
+/* ── Dashboard demo ── */
+#demo{padding:80px 64px;background:var(--deep)}
+.demo-wrap{background:var(--hull);border:1px solid var(--rail);border-radius:16px;overflow:hidden;margin-top:40px}
+.demo-topbar{background:var(--deep);padding:12px 20px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--rail)}
+.demo-dot{width:10px;height:10px;border-radius:50%}
+.demo-title{font-family:'Space Mono',monospace;font-size:11px;color:var(--muted);margin-left:8px;letter-spacing:.5px}
+.demo-grid{display:grid;grid-template-columns:260px 1fr 300px;min-height:500px}
+.demo-panel{padding:16px;border-right:1px solid var(--rail)}
+.demo-panel:last-child{border-right:none}
+.panel-title{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:14px}
+.kpi-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.kpi-mini{background:var(--panel);border-radius:6px;padding:10px}
+.kpi-mini-val{font-family:'Space Mono',monospace;font-size:20px;font-weight:700;color:var(--signal);line-height:1;margin-bottom:2px}
+.kpi-mini-val.warn{color:var(--warn)}
+.kpi-mini-label{font-size:10px;color:var(--muted)}
+.alert-mini{background:var(--panel);border:1px solid var(--rail);border-radius:6px;padding:10px;margin-bottom:6px;cursor:pointer;transition:border-color .15s}
+.alert-mini:hover{border-color:var(--signal)}
+.alert-mini.active-alert{border-color:var(--signal);background:rgba(0,201,176,.06)}
+.alert-mini-top{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.sev-pip{font-size:9px;font-family:'Space Mono',monospace;padding:2px 6px;border-radius:2px;letter-spacing:.5px}
+.H{background:rgba(255,101,53,.12);color:var(--warn)}
+.M{background:rgba(245,166,35,.1);color:var(--amber)}
+.L{background:rgba(34,197,94,.08);color:var(--clear)}
+.alert-mini-title{font-size:12px;font-weight:600;color:var(--bright)}
+.alert-mini-vessel{font-size:11px;color:var(--muted)}
+#demo-map{height:100%;min-height:500px}
+.detail-pane{overflow-y:auto}
+.detail-empty{color:var(--muted);font-size:12px;padding:20px 0;text-align:center}
+.detail-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:11px;gap:8px}
+.detail-row:last-child{border-bottom:none}
+.dk{color:var(--muted);font-family:'Space Mono',monospace;font-size:10px;flex-shrink:0}
+.dv{color:var(--bright);text-align:right;font-size:11px}
+.detail-explain{font-size:11px;color:var(--ghost);line-height:1.6;margin:10px 0;padding:10px;background:var(--panel);border-radius:6px;border-left:2px solid var(--signal)}
+.detail-action{font-size:11px;color:var(--amber);line-height:1.6;padding:10px;background:var(--panel);border-radius:6px;border-left:2px solid var(--amber)}
+
+/* ── Tech deep-dive ── */
+#tech{padding:80px 64px;max-width:1200px;margin:0 auto}
+.tech-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px}
+.tech-block{border-left:2px solid var(--rail);padding-left:24px}
+.tech-block-title{font-size:16px;font-weight:600;color:var(--bright);margin-bottom:10px}
+.tech-block-sub{font-size:13px;color:var(--ghost);line-height:1.7;margin-bottom:16px}
+.tech-tag{display:inline-block;font-family:'Space Mono',monospace;font-size:10px;padding:3px 8px;border-radius:3px;border:1px solid var(--rail);color:var(--muted);margin:2px}
+.limitations-box{background:rgba(245,166,35,.04);border:1px solid rgba(245,166,35,.15);border-radius:var(--r);padding:20px;margin-top:32px}
+.limitations-title{font-family:'Space Mono',monospace;font-size:10px;letter-spacing:2px;color:var(--amber);margin-bottom:12px}
+.limitation-item{font-size:12px;color:var(--ghost);padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);line-height:1.5;display:flex;gap:10px}
+.limitation-item:last-child{border-bottom:none;padding-bottom:0}
+.limitation-item::before{content:'→';color:var(--amber);flex-shrink:0}
+
+/* ── Market ── */
+#market{padding:80px 64px;background:var(--deep)}
+.tam-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:40px;max-width:1200px;margin-left:auto;margin-right:auto}
+.tam-card{background:var(--hull);border:1px solid var(--rail);border-radius:12px;padding:24px}
+.tam-tier-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+.tam-val{font-size:32px;font-weight:700;margin-bottom:8px;line-height:1}
+.tam-desc{font-size:12px;color:var(--ghost);line-height:1.6;margin-bottom:14px}
+.tam-refs{font-size:11px;color:var(--muted)}
+.tam-refs li{list-style:none;padding:2px 0;border-top:1px solid var(--rail);padding-top:4px;margin-top:2px}
+.competitors-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:32px;max-width:1200px;margin-left:auto;margin-right:auto}
+.comp-card{background:var(--hull);border:1px solid var(--rail);border-radius:var(--r);padding:18px}
+.comp-name{font-size:14px;font-weight:600;color:var(--bright);margin-bottom:6px}
+.comp-type{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:1.5px;color:var(--muted);margin-bottom:10px}
+.comp-pro{font-size:12px;color:var(--ghost);margin-bottom:8px;line-height:1.5}
+.comp-gap{font-size:12px;color:var(--signal);line-height:1.5}
+.comp-gap::before{content:'✦ ';opacity:.6}
+
+/* ── Roadmap ── */
+#roadmap{padding:80px 64px;max-width:1200px;margin:0 auto}
+.road-track{position:relative;margin-top:50px}
+.road-line{position:absolute;top:24px;left:0;right:0;height:1px;background:var(--rail);z-index:0}
+.road-phases{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;position:relative;z-index:1}
+.road-phase{text-align:center}
+.road-circle{width:48px;height:48px;border-radius:50%;border:2px solid var(--rail);background:var(--void);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;transition:border-color .2s}
+.road-circle.done{border-color:var(--signal);color:var(--signal)}
+.road-circle.now{border-color:var(--amber);color:var(--amber);box-shadow:0 0 0 4px rgba(245,166,35,.12)}
+.road-phase-title{font-size:13px;font-weight:600;color:var(--bright);margin-bottom:8px}
+.road-items{text-align:left;font-size:11px;color:var(--ghost);line-height:1.6}
+.road-item{padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.road-item.done-item{color:var(--signal);opacity:.7}
+.road-time{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);margin-top:8px}
+
+/* ── VC gates ── */
+#vc{padding:80px 64px;background:var(--deep)}
+.gates-inner{max-width:1200px;margin:0 auto}
+.gates-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:40px}
+.gate-node{background:var(--hull);border:1px solid var(--rail);border-radius:var(--r);padding:14px 10px;text-align:center;cursor:pointer;transition:border-color .2s,background .2s}
+.gate-node:hover{border-color:var(--signal);background:rgba(0,201,176,.04)}
+.gate-node.gate-done{border-color:var(--signal)}
+.gate-node.gate-now{border-color:var(--amber)}
+.gate-num{font-family:'Space Mono',monospace;font-size:9px;color:var(--muted);margin-bottom:5px;letter-spacing:1px}
+.gate-name{font-size:11px;font-weight:600;color:var(--bright);margin-bottom:6px;line-height:1.4}
+.gate-badge{font-size:9px;font-family:'Space Mono',monospace;padding:2px 7px;border-radius:2px;letter-spacing:.5px}
+.gb-done{background:rgba(0,201,176,.1);color:var(--signal)}
+.gb-now{background:rgba(245,166,35,.1);color:var(--amber)}
+.gb-next{background:rgba(255,255,255,.05);color:var(--muted)}
+.gate-detail{background:var(--hull);border:1px solid var(--rail);border-radius:12px;padding:24px;margin-top:16px;min-height:160px}
+.gate-detail-title{font-size:16px;font-weight:600;color:var(--bright);margin-bottom:16px}
+.gate-cols{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.gate-col-label{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+.gate-req{font-size:12px;color:var(--ghost);padding:4px 0;border-bottom:1px solid rgba(255,255,255,.04);line-height:1.5;display:flex;gap:8px}
+.gate-req::before{content:'→';color:var(--signal);flex-shrink:0}
+.gate-blocker{grid-column:1/-1;background:rgba(255,101,53,.06);border:1px solid rgba(255,101,53,.2);border-radius:6px;padding:12px;font-size:12px;color:var(--warn);margin-top:8px;line-height:1.5}
+
+/* ── Funding ── */
+#funding{padding:80px 64px;max-width:1200px;margin:0 auto}
+.funding-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px}
+.funding-card{background:var(--hull);border:1px solid var(--rail);border-radius:12px;padding:24px}
+.funding-title{font-size:15px;font-weight:600;color:var(--bright);margin-bottom:6px}
+.funding-sub{font-size:12px;color:var(--ghost);margin-bottom:16px;line-height:1.6}
+.funding-item{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:12px}
+.funding-item:last-child{border-bottom:none}
+.fi-label{color:var(--ghost)}
+.fi-val{font-family:'Space Mono',monospace;color:var(--bright)}
+.fi-val.good{color:var(--signal)}
+.fi-val.warn{color:var(--amber)}
+.caution-box{background:rgba(245,166,35,.04);border:1px solid rgba(245,166,35,.12);border-radius:var(--r);padding:16px;margin-top:16px}
+.caution-title{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--amber);margin-bottom:8px}
+.caution-item{font-size:12px;color:var(--ghost);line-height:1.6;padding:3px 0;display:flex;gap:8px}
+.caution-item::before{content:'!';color:var(--amber);flex-shrink:0;font-weight:700}
+
+/* ── Reading list ── */
+#reading{padding:80px 64px;background:var(--deep)}
+.reading-inner{max-width:1200px;margin:0 auto}
+.reading-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:40px}
+.reading-card{background:var(--hull);border:1px solid var(--rail);border-radius:var(--r);padding:18px}
+.reading-cat{font-family:'Space Mono',monospace;font-size:9px;letter-spacing:2px;color:var(--signal);text-transform:uppercase;margin-bottom:10px}
+.reading-item{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:12px;line-height:1.5}
+.reading-item:last-child{border-bottom:none;padding-bottom:0}
+.reading-num{font-family:'Space Mono',monospace;font-size:10px;color:var(--muted);flex-shrink:0;min-width:18px}
+.reading-text{color:var(--ghost)}
+.reading-text a{color:var(--signal);text-decoration:none}
+.reading-text a:hover{text-decoration:underline}
+
+/* ── Kill criteria ── */
+#kill{padding:40px 64px 80px;max-width:1200px;margin:0 auto}
+.kill-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:24px}
+.kill-item{background:rgba(255,101,53,.04);border:1px solid rgba(255,101,53,.15);border-radius:var(--r);padding:14px 16px;font-size:13px;color:var(--ghost);line-height:1.6;display:flex;gap:12px}
+.kill-x{color:var(--warn);font-family:'Space Mono',monospace;font-size:14px;font-weight:700;flex-shrink:0;margin-top:1px}
+
+/* ── Footer ── */
+footer{padding:40px 64px;background:var(--void);border-top:1px solid rgba(255,255,255,.05);display:flex;align-items:center;justify-content:space-between}
+.footer-logo{font-family:'Space Mono',monospace;font-size:13px;font-weight:700;color:var(--signal);letter-spacing:3px}
+.footer-note{font-size:11px;color:var(--muted);text-align:center;max-width:480px}
+.footer-links{display:flex;gap:16px}
+.footer-links a{font-size:12px;color:var(--muted);text-decoration:none}
+.footer-links a:hover{color:var(--signal)}
+
+/* ── Responsive ── */
+@media(max-width:900px){
+  .hero-grid,.demo-grid,.tech-grid,.funding-grid{grid-template-columns:1fr}
+  .steps-grid,.tam-row,.gates-grid{grid-template-columns:1fr 1fr}
+  .reading-grid,.competitors-grid,.road-phases{grid-template-columns:1fr 1fr}
+  #hero,.demo-grid{padding:80px 24px 60px}
+  #map-section,#how,#demo,#tech,#market,#roadmap,#vc,#funding,#reading,#kill{padding:60px 24px}
+  .gate-cols{grid-template-columns:1fr}
+  nav{padding:0 16px}
+  .nav-links{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-logo">BOOBOOK</div>
+  <div class="nav-links">
+    <a href="#map-section">The problem</a>
+    <a href="#how">How it works</a>
+    <a href="#demo">Live demo</a>
+    <a href="#market">Market</a>
+    <a href="#roadmap">Roadmap</a>
+    <a href="#vc">VC gates</a>
+    <a href="#funding">Funding</a>
+    <a href="#reading">Research</a>
+  </div>
+  <a class="nav-cta" href="mailto:kavan@attalis.com.au">GET IN TOUCH →</a>
+</nav>
+
+<!-- ── HERO ── -->
+<section id="hero">
+  <div class="hero-grid">
+    <div>
+      <div class="hero-eyebrow">Sovereign Australian Maritime Intelligence</div>
+      <h1 class="hero-title">We hear what<br>ships <em>can't hide</em></h1>
+      <p class="hero-sub">Boobook is a passive RF intelligence layer for Australian maritime enforcement. We detect vessels that go dark — not by trusting their AIS transponder, but by listening for the radio signals every working ship still emits.</p>
+      <div class="hero-actions">
+        <a class="btn-primary" href="#demo">See the dashboard</a>
+        <a class="btn-ghost" href="#vc">Investor view →</a>
+      </div>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-card">
+        <div class="stat-val">100+</div>
+        <div class="stat-label">IUU vessels intercepted in a single AFMA operation. Each one required expensive patrol assets. We cue faster.</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val">$98.8M</div>
+        <div class="stat-label">HawkEye 360 US Navy Indo-Pacific contract. The category is real. The sovereign gap is Australian.</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val">0</div>
+        <div class="stat-label">Australian companies currently providing ground-based passive RF geolocation of northern approaches. That's the gap.</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val">25¢</div>
+        <div class="stat-label">Effective R&D cost per dollar with RDTI + ASCA + DIDG stacked correctly. Non-dilutive edge most VCs can't fund.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── MAP ── -->
+<section id="map-section">
+  <div style="max-width:1200px;margin:0 auto">
+    <div class="section-tag">Northern approaches</div>
+    <h2 class="section-title">The surveillance gap</h2>
+    <p class="section-sub">Australia's northern EEZ spans 8.1 million km². Satellites revisit every few hours. Patrol vessels cover a fraction at any one time. Boobook instruments the chokepoints — the passages every vessel must transit — with persistent ground sensors.</p>
+    <div id="map"></div>
+    <div class="map-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#00c9b0"></div>Boobook sensor cluster (planned)</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff6535"></div>High-risk IUU activity zone</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#f5a623"></div>Key maritime chokepoint</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<section id="how">
+  <div class="section-tag">The technology</div>
+  <h2 class="section-title">Four layers. One intelligence product.</h2>
+  <p class="section-sub">Ships that turn off their AIS still emit radio: VHF radio, marine radar, satellite phones. Our ground-based receivers capture those emissions, timestamp them to nanosecond precision, and correlate them against AIS to surface dark-vessel alerts.</p>
+  <div class="steps-grid">
+    <div class="step-card" data-n="01">
+      <div class="step-icon">📡</div>
+      <div class="step-title">Passive RF receive</div>
+      <div class="step-body">Ground-based SDR nodes at chokepoints passively receive VHF, AIS, and radar emissions from vessels within ~40km line-of-sight. No transmitting. No licensing complications.</div>
+      <div class="step-tech">RTL-SDR v4 · GNU Radio · VHF collinear</div>
+    </div>
+    <div class="step-card" data-n="02">
+      <div class="step-icon">⏱</div>
+      <div class="step-title">TDOA geolocation</div>
+      <div class="step-body">The same emission arrives at three nodes at slightly different times. GCC-PHAT cross-correlation measures those delays to nanosecond precision. Three hyperbolas intersect at the emitter's position.</div>
+      <div class="step-tech">GCC-PHAT · GPSDO timing · Hyperbolic solver</div>
+    </div>
+    <div class="step-card" data-n="03">
+      <div class="step-icon">🔗</div>
+      <div class="step-title">AIS fusion</div>
+      <div class="step-body">RF position fixes are compared against AIS/VMS tracks. If RF says "emitter here" but AIS says "nothing here," it becomes a dark-vessel detection opportunity — not proof, but a cue for patrol.</div>
+      <div class="step-tech">AMSA CTS · MarineTraffic API · TimescaleDB</div>
+    </div>
+    <div class="step-card" data-n="04">
+      <div class="step-icon">⚡</div>
+      <div class="step-title">Anomaly intelligence</div>
+      <div class="step-body">AIS gaps, impossible speed jumps, loitering patterns, and vessel rendezvous are scored probabilistically. Enforcement analysts get a prioritised alert queue, not a data dump.</div>
+      <div class="step-tech">Python · Bayesian scoring · FastAPI · Leaflet</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DASHBOARD DEMO ── -->
+<section id="demo">
+  <div style="max-width:1200px;margin:0 auto">
+    <div class="section-tag">Interactive prototype</div>
+    <h2 class="section-title">The analyst dashboard</h2>
+    <p class="section-sub">Click any alert in the queue to see the full evidence chain. This is AIS-only validation — the same interface becomes materially more powerful when independent RF detections are fused in.</p>
+    <div class="demo-wrap">
+      <div class="demo-topbar">
+        <div class="demo-dot" style="background:#ff5f56"></div>
+        <div class="demo-dot" style="background:#ffbd2e"></div>
+        <div class="demo-dot" style="background:#27c93f"></div>
+        <div class="demo-title">BOOBOOK — Northern Approaches · AIS validation mode</div>
+      </div>
+      <div class="demo-grid">
+        <!-- Left: KPIs + alerts -->
+        <div class="demo-panel">
+          <div class="panel-title">Summary</div>
+          <div class="kpi-mini-grid">
+            <div class="kpi-mini"><div class="kpi-mini-val">9</div><div class="kpi-mini-label">Vessels</div></div>
+            <div class="kpi-mini"><div class="kpi-mini-val warn">6</div><div class="kpi-mini-label">High risk</div></div>
+            <div class="kpi-mini"><div class="kpi-mini-val">133</div><div class="kpi-mini-label">AIS rows</div></div>
+            <div class="kpi-mini"><div class="kpi-mini-val warn">14</div><div class="kpi-mini-label">Alerts</div></div>
+          </div>
+          <div class="panel-title">Alert queue</div>
+          <div id="alert-list"></div>
+        </div>
+        <!-- Centre: map -->
+        <div style="padding:0;border-right:1px solid var(--rail)">
+          <div id="demo-map"></div>
+        </div>
+        <!-- Right: detail -->
+        <div class="demo-panel detail-pane">
+          <div class="panel-title">Alert detail</div>
+          <div id="alert-detail"><div class="detail-empty">Select an alert</div></div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-top:12px;text-align:center">⚠ Synthetic data for demonstration. AIS anomalies are not proof of illegal behaviour. Passive RF layer is next validation milestone.</p>
+  </div>
+</section>
+
+<!-- ── TECH ── -->
+<section id="tech">
+  <div class="section-tag">Technical depth</div>
+  <h2 class="section-title">The physics and the maths</h2>
+  <p class="section-sub">The core signal processing is 50 years of validated science. The sovereign advantage is applying it persistently to Australian waters with a software intelligence layer on top.</p>
+  <div class="tech-grid">
+    <div>
+      <div class="tech-block">
+        <div class="tech-block-title">GCC-PHAT — the timing core</div>
+        <div class="tech-block-sub">Generalised Cross-Correlation with Phase Transform (Knapp & Carter, 1976 — still the standard). Two receivers capture the same signal. GCC-PHAT cross-correlates them in the frequency domain, whitening the spectrum so the delay peak is sharp even in multipath environments. With GPS-disciplined oscillators providing nanosecond timing, position accuracy of 1–5 km is achievable at 100–500km baselines.</div>
+        <div>
+          <span class="tech-tag">GCC-PHAT</span><span class="tech-tag">GPSDO</span><span class="tech-tag">1PPS sync</span><span class="tech-tag">scipy.signal</span>
+        </div>
+      </div>
+      <br/>
+      <div class="tech-block">
+        <div class="tech-block-title">Hyperbolic positioning</div>
+        <div class="tech-block-sub">Each TDOA measurement defines a hyperbola of possible positions. Three receivers give two independent hyperbolas — one intersection. Four or more receivers give an overdetermined system solved by weighted least squares, yielding position + uncertainty ellipse (GDOP-aware). The solver handles bad-node rejection and outputs a Circular Error Probable (CEP50).</div>
+        <div>
+          <span class="tech-tag">Hyperbolic solver</span><span class="tech-tag">GDOP</span><span class="tech-tag">CEP50</span><span class="tech-tag">scipy.optimize</span>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="tech-block">
+        <div class="tech-block-title">RF emissions a dark vessel can't suppress</div>
+        <div class="tech-block-sub">Even with AIS disabled, an operational vessel continuously emits: VHF radio (156–174 MHz, required for distress monitoring), X-band marine radar (9.2–9.5 GHz, required for navigation), and satellite phone (Iridium 1.6GHz, Thuraya 1.5GHz). Suppressing all of these simultaneously is operationally implausible for a working fishing vessel.</div>
+        <div>
+          <span class="tech-tag">VHF 162MHz</span><span class="tech-tag">AIS 161.975MHz</span><span class="tech-tag">X-band radar</span><span class="tech-tag">Iridium 1.6GHz</span>
+        </div>
+      </div>
+      <br/>
+      <div class="tech-block">
+        <div class="tech-block-title">Anomaly scoring — the actuarial layer</div>
+        <div class="tech-block-sub">Five detection rules run continuously: AIS gap (>2h silence), impossible implied speed (>45kn = spoofing indicator), loitering (>2h in 5km radius at <3kn avg = IUU fishing pattern), vessel rendezvous (two vessels <2km apart within 30min), sensitive zone presence. Each alert carries a 0–100 risk score, severity tier, evidence chain, and recommended action.</div>
+        <div>
+          <span class="tech-tag">Bayesian scoring</span><span class="tech-tag">5 detection rules</span><span class="tech-tag">0–100 risk score</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="limitations-box">
+    <div class="limitations-title">⚠ Honest technical limits — current state</div>
+    <div class="limitation-item">Ground-based VHF/AIS is line-of-sight limited (~35–50km per node). This is a chokepoint product, not continental coverage.</div>
+    <div class="limitation-item">TDOA requires the same emitter heard by ≥3 nodes simultaneously. Node geometry and overlap zone determines coverage.</div>
+    <div class="limitation-item">Current CEP shown is timing-budget only. Real-world adds multipath and survey error: plan for 1–5km at cluster scale.</div>
+    <div class="limitation-item">Radar detection (X/S-band) requires separate RF front-end hardware — it is Phase 2/3, not validated in current prototype.</div>
+    <div class="limitation-item">AIS anomalies are not proof of illegal behaviour. All alerts are cueing signals for human review, not enforcement actions.</div>
+  </div>
+</section>
+
+<!-- ── MARKET ── -->
+<section id="market">
+  <div style="max-width:1200px;margin:0 auto">
+    <div class="section-tag">Market sizing</div>
+    <h2 class="section-title">A real category. A sovereign gap.</h2>
+    <p class="section-sub">The market leaders are American and French. Australia is buying this capability offshore. The sovereign argument is not a talking point — it's a procurement requirement.</p>
+    <div class="tam-row">
+      <div class="tam-card">
+        <div class="tam-tier-label">SAM — we address this</div>
+        <div class="tam-val" style="color:var(--signal)">$8–15M ARR</div>
+        <div class="tam-desc">Australian sovereign MDA buyers: AFMA, ABF, state fisheries, port security, marine insurers. Persistent ground-based RF+AIS intelligence.</div>
+        <ul class="tam-refs">
+          <li>AFMA analytics + monitoring: $2–4M/yr</li>
+          <li>ABF Maritime Border Command: $3–6M/yr</li>
+          <li>State agencies + ports: $2–5M/yr</li>
+        </ul>
+      </div>
+      <div class="tam-card">
+        <div class="tam-tier-label">TAM — with traction</div>
+        <div class="tam-val" style="color:var(--amber)">$120–250M</div>
+        <div class="tam-desc">Indo-Pacific MDA: Australia + NZ + Pacific Island states + Five Eyes adjacent maritime monitoring contracts.</div>
+        <ul class="tam-refs">
+          <li>HawkEye 360: $98.8M single Navy IDIQ</li>
+          <li>Unseenlabs Series B: €28M (2023)</li>
+          <li>Windward Series C: $35M</li>
+        </ul>
+      </div>
+      <div class="tam-card">
+        <div class="tam-tier-label">TOM — don't pitch this</div>
+        <div class="tam-val" style="color:var(--muted)">$2–4B</div>
+        <div class="tam-desc">Global maritime domain awareness including satellite RF, AIS analytics. We don't address this. Citing it loses credibility with technical investors.</div>
+        <ul class="tam-refs">
+          <li>Spire Maritime: $100M+ ARR</li>
+          <li>Orbcomm, exactEarth, Pole Star</li>
+          <li>Not our market</li>
+        </ul>
+      </div>
+    </div>
+    <div class="section-tag" style="margin-top:48px">Competitive landscape</div>
+    <div class="competitors-grid">
+      <div class="comp-card">
+        <div class="comp-name">HawkEye 360</div>
+        <div class="comp-type">Satellite RF · Virginia, USA</div>
+        <div class="comp-pro">Cluster satellites geolocate RF globally. $98.8M US Navy IDIQ. Category validator.</div>
+        <div class="comp-gap">Satellites revisit every few hours. No persistent Indo-Pacific ground layer. US sovereign, not Australian.</div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-name">Unseenlabs</div>
+        <div class="comp-type">Satellite RF · Paris, France</div>
+        <div class="comp-pro">Vessel electromagnetic fingerprinting from orbit. Near real-time dark vessel monitoring.</div>
+        <div class="comp-gap">French infrastructure, French data sovereignty. No persistent Australian northern coverage. No ground layer.</div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-name">Windward</div>
+        <div class="comp-type">AIS analytics · Tel Aviv</div>
+        <div class="comp-pro">AI-powered maritime intelligence. Strong AIS anomaly detection layer.</div>
+        <div class="comp-gap">No independent RF validation. Analysts must manually connect AIS, SAR, electro-optical. No Australian sovereign angle.</div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-name">Spire Maritime</div>
+        <div class="comp-type">Satellite AIS · San Francisco</div>
+        <div class="comp-pro">Global satellite AIS coverage, weather, vessel tracking.</div>
+        <div class="comp-gap">Cooperative AIS only — same weakness as every AIS product. No RF independent validation layer.</div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-name">Boobook edge</div>
+        <div class="comp-type">Ground-based RF · Sydney, Australia</div>
+        <div class="comp-pro">Persistent chokepoint monitoring. Australian data sovereignty. Cheaper per corridor than satellite. No ITAR.</div>
+        <div class="comp-gap">Currently: simulation + AIS validation MVP. RF field validation is next milestone.</div>
+      </div>
+      <div class="comp-card">
+        <div class="comp-name">KiwiSDR network</div>
+        <div class="comp-type">Community HF SDR · Global</div>
+        <div class="comp-pro">Working public TDOA implementation. Proves the architecture at HF frequencies. Open source reference.</div>
+        <div class="comp-gap">HF only (0–30MHz), not VHF/AIS maritime bands. Community project, not commercial product.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── ROADMAP ── -->
+<section id="roadmap">
+  <div class="section-tag">Execution path</div>
+  <h2 class="section-title">Staged validation. No bluff.</h2>
+  <p class="section-sub">Every milestone is a proof point that expands what we can credibly claim. We don't skip steps.</p>
+  <div class="road-track">
+    <div class="road-line"></div>
+    <div class="road-phases">
+      <div class="road-phase">
+        <div class="road-circle done">P1</div>
+        <div class="road-phase-title">Prove the signal</div>
+        <div class="road-items">
+          <div class="road-item done-item">✓ AIS anomaly engine</div>
+          <div class="road-item done-item">✓ AMSA CTS pipeline</div>
+          <div class="road-item done-item">✓ Investor dashboard</div>
+          <div class="road-item done-item">✓ TDOA simulation</div>
+          <div class="road-item done-item">✓ 27 tests passing</div>
+        </div>
+        <div class="road-time">Complete</div>
+      </div>
+      <div class="road-phase">
+        <div class="road-circle now">P2</div>
+        <div class="road-phase-title">Validate hardware</div>
+        <div class="road-items">
+          <div class="road-item">RF co-founder</div>
+          <div class="road-item">Live AIS via RTL-SDR</div>
+          <div class="road-item">3-node TDOA test</div>
+          <div class="road-item">Measured error budget</div>
+          <div class="road-item">Customer discovery × 10</div>
+        </div>
+        <div class="road-time">0–20 weeks</div>
+      </div>
+      <div class="road-phase">
+        <div class="road-circle">P3</div>
+        <div class="road-phase-title">First paid pilot</div>
+        <div class="road-items">
+          <div class="road-item">AFMA/ABF signed contract</div>
+          <div class="road-item">Torres Strait deployment</div>
+          <div class="road-item">$50–150k ARR</div>
+          <div class="road-item">RDTI first claim</div>
+          <div class="road-item">ASCA EOI submitted</div>
+        </div>
+        <div class="road-time">6–14 months</div>
+      </div>
+      <div class="road-phase">
+        <div class="road-circle">P4</div>
+        <div class="road-phase-title">VC-approachable</div>
+        <div class="road-items">
+          <div class="road-item">$250k+ ARR</div>
+          <div class="road-item">2+ live customers</div>
+          <div class="road-item">5+ deployed nodes</div>
+          <div class="road-item">Unique RF dataset</div>
+          <div class="road-item">Seed raise</div>
+        </div>
+        <div class="road-time">14–24 months</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── VC GATES ── -->
+<section id="vc">
+  <div class="gates-inner">
+    <div class="section-tag">For investors</div>
+    <h2 class="section-title">The seven gates to seed-ready</h2>
+    <p class="section-sub">Every serious VC will check these seven things. Two are done. Click each gate to see exactly what's required and why it matters.</p>
+    <div class="gates-grid" id="gates-grid"></div>
+    <div class="gate-detail" id="gate-detail">
+      <div style="color:var(--muted);font-size:13px;text-align:center;padding:20px 0">Select a gate above</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FUNDING ── -->
+<section id="funding">
+  <div class="section-tag">Funding structure</div>
+  <h2 class="section-title">Non-dilutive edge. Bootstrap-first.</h2>
+  <p class="section-sub">The grant landscape is real but needs discipline. DIDG is not prototype money. RDTI is in arrears. Build the model around what's bankable.</p>
+  <div class="funding-grid">
+    <div class="funding-card">
+      <div class="funding-title">Pre-seed ask — what $150–300k buys</div>
+      <div class="funding-sub">Bridge to first contract. Hardware, travel, co-founder equity, legal setup, customer discovery.</div>
+      <div class="funding-item"><span class="fi-label">RTL-SDR hardware × 6 nodes</span><span class="fi-val">$3k</span></div>
+      <div class="funding-item"><span class="fi-label">GPSDO timing hardware</span><span class="fi-val">$4k</span></div>
+      <div class="funding-item"><span class="fi-label">Node deployment travel (Darwin, Torres Strait)</span><span class="fi-val">$12k</span></div>
+      <div class="funding-item"><span class="fi-label">AUCloud sovereign hosting (12 months)</span><span class="fi-val">$8k</span></div>
+      <div class="funding-item"><span class="fi-label">Legal setup + ACMA/TIA review</span><span class="fi-val">$15k</span></div>
+      <div class="funding-item"><span class="fi-label">Founder runway (12 months part-time)</span><span class="fi-val">$60k</span></div>
+      <div class="funding-item"><span class="fi-label">Customer discovery + D10x application</span><span class="fi-val">$5k</span></div>
+      <div class="funding-item"><span class="fi-label">Buffer / contingency</span><span class="fi-val">$45k</span></div>
+      <div class="funding-item" style="border-top:1px solid var(--rail);margin-top:4px;padding-top:8px"><span class="fi-label" style="font-weight:600;color:var(--bright)">Total</span><span class="fi-val good">$152k</span></div>
+    </div>
+    <div>
+      <div class="funding-card" style="margin-bottom:16px">
+        <div class="funding-title">Grant stack (non-dilutive)</div>
+        <div class="funding-sub">Stack these correctly and effective R&D cost drops to ~25¢/dollar.</div>
+        <div class="funding-item"><span class="fi-label">R&D Tax Incentive (RDTI)</span><span class="fi-val good">43.5% refundable offset</span></div>
+        <div class="funding-item"><span class="fi-label">ASCA (ISR/autonomous stream)</span><span class="fi-val warn">$1–30M competitive</span></div>
+        <div class="funding-item"><span class="fi-label">UNSW Defence 10x</span><span class="fi-val warn">$50–150k + network</span></div>
+        <div class="funding-item"><span class="fi-label">DIDG (equipment/accreditation only)</span><span class="fi-val warn">Up to 50% match</span></div>
+      </div>
+      <div class="caution-box">
+        <div class="caution-title">⚠ Grant discipline — read before modelling</div>
+        <div class="caution-item">DIDG is ineligible for product development, R&D, prototyping. Use only for equipment, skilling, security posture, export readiness after first customer.</div>
+        <div class="caution-item">RDTI is in arrears — reimbursed after the tax year. Never model as upfront cash. Start R&D logbook today (contemporaneous records required).</div>
+        <div class="caution-item">ASCA is competitive, not automatic. Treat as upside scenario, never base case.</div>
+        <div class="caution-item">Build the model around pre-seed + pilot revenue as base case. Grants are upside that materially improves IRR.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── READING LIST ── -->
+<section id="reading">
+  <div class="reading-inner">
+    <div class="section-tag">Behind the scenes</div>
+    <h2 class="section-title">What this is built on</h2>
+    <p class="section-sub">Every technical claim is grounded in peer-reviewed literature, real regulatory documents, and competitor filings. Read the primary sources before pitching anyone.</p>
+    <div class="reading-grid">
+      <div class="reading-card">
+        <div class="reading-cat">Core technical papers</div>
+        <div class="reading-item"><span class="reading-num">01</span><span class="reading-text">Knapp & Carter 1976 — GCC-PHAT original. <em>IEEE ASSP-24(4)</em>. Still the standard after 50 years.</span></div>
+        <div class="reading-item"><span class="reading-num">02</span><span class="reading-text">Gioia et al. 2020 — Maritime TDOA with asynchronous nodes. <a href="https://doi.org/10.3390/s20071842" target="_blank">DOI: 10.3390/s20071842</a></span></div>
+        <div class="reading-item"><span class="reading-num">03</span><span class="reading-text">arXiv:2502.01503 — Dark vessel trajectory reconstruction via abductive reasoning (Feb 2025). Current state-of-art.</span></div>
+        <div class="reading-item"><span class="reading-num">04</span><span class="reading-text">arXiv:2002.05013 — ML anomaly detection taxonomy. Broad survey of methods applicable to AIS.</span></div>
+        <div class="reading-item"><span class="reading-num">05</span><span class="reading-text"><a href="https://www.analog.com/en/education/education-library/software-defined-radio-for-engineers.html" target="_blank">Software Defined Radio for Engineers</a> — Analog Devices. Free PDF. SDR fundamentals.</span></div>
+      </div>
+      <div class="reading-card">
+        <div class="reading-cat">Regulatory & customer</div>
+        <div class="reading-item"><span class="reading-num">06</span><span class="reading-text"><a href="https://www.afma.gov.au" target="_blank">AFMA Annual Reports</a> — IUU intercept statistics, enforcement workflow, budget. Primary customer reading.</span></div>
+        <div class="reading-item"><span class="reading-num">07</span><span class="reading-text">ABF Operation Pristis 2026 — Active IUU targeting, Kimberley to Cape York. Market validation in real-time.</span></div>
+        <div class="reading-item"><span class="reading-num">08</span><span class="reading-text"><a href="https://www.acma.gov.au" target="_blank">ACMA radiocommunications licensing</a> — Receive-only SDR rules. Read before deploying any hardware.</span></div>
+        <div class="reading-item"><span class="reading-num">09</span><span class="reading-text">TIA Act (Telecommunications Interception) — Metadata vs content boundary. Architecture must be metadata-only.</span></div>
+        <div class="reading-item"><span class="reading-num">10</span><span class="reading-text"><a href="https://www.defence.gov.au/programs-initiatives/industry-support/defence-industry-development-grants" target="_blank">DIDG program guidelines</a> — What is/isn't eligible. Critical reading before any grant claim.</span></div>
+      </div>
+      <div class="reading-card">
+        <div class="reading-cat">Market & competitor intelligence</div>
+        <div class="reading-item"><span class="reading-num">11</span><span class="reading-text"><a href="https://www.hawkeye360.com" target="_blank">HawkEye 360</a> — $98.8M US Navy Indo-Pacific IDIQ (Dec 2025). Category validator.</span></div>
+        <div class="reading-item"><span class="reading-num">12</span><span class="reading-text"><a href="https://unseenlabs.com" target="_blank">Unseenlabs</a> — Series B €28M. Dark vessel RF fingerprinting from orbit. French sovereignty gap.</span></div>
+        <div class="reading-item"><span class="reading-num">13</span><span class="reading-text"><a href="https://operations.amsa.gov.au/Spatial/DataServices/DigitalData" target="_blank">AMSA Spatial CTS</a> — Monthly vessel traffic datasets. Primary data source for AIS validation MVP.</span></div>
+        <div class="reading-item"><span class="reading-num">14</span><span class="reading-text"><a href="https://globalfishingwatch.org" target="_blank">Global Fishing Watch</a> — Open IUU behaviour-labelled AIS data. Ground truth for training anomaly models.</span></div>
+        <div class="reading-item"><span class="reading-num">15</span><span class="reading-text">UNSW Defence 10x Accelerator — Australia's only defence-focused accelerator. $50–150k non-dilutive. Apply here first.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── KILL CRITERIA ── -->
+<section id="kill">
+  <div class="section-tag">Intellectual honesty</div>
+  <h2 class="section-title">When to stop</h2>
+  <p class="section-sub">These are the kill criteria. If any of these hit before spending serious money, the right move is to pause — not push through.</p>
+  <div class="kill-grid">
+    <div class="kill-item"><span class="kill-x">✗</span>Cannot receive clean live AIS from Sydney Harbour within 2 weeks of hardware arriving</div>
+    <div class="kill-item"><span class="kill-x">✗</span>Cannot find a single credible RF/signals engineer willing to advise or co-found</div>
+    <div class="kill-item"><span class="kill-x">✗</span>10 customer discovery calls produce zero "this would help us" responses from enforcement operators</div>
+    <div class="kill-item"><span class="kill-x">✗</span>3-node TDOA test produces position error >15km consistently — physics doesn't work at your baseline</div>
+    <div class="kill-item"><span class="kill-x">✗</span>Legal review concludes receive-only VHF architecture triggers TIA Act interception liability</div>
+    <div class="kill-item"><span class="kill-x">✗</span>First pilot procurement cycle takes >24 months — cashflow model collapses before revenue</div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-logo">BOOBOOK</div>
+  <div class="footer-note">Boobook is a pre-seed sovereign Australian maritime intelligence startup. All technical claims are hedged to current validation state. AIS anomalies are not proof of illegal behaviour. RF capability is simulation until field-tested. Built by Attalis Capital.</div>
+  <div class="footer-links">
+    <a href="https://github.com/Attalis-Capital/boobook" target="_blank">GitHub</a>
+    <a href="mailto:kavan@attalis.com.au">Contact</a>
+  </div>
+</footer>
+
+<script>
+// ── MAP ──
+const map = L.map('map', {center:[-12, 134], zoom:5, zoomControl:true});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  attribution:'&copy; OpenStreetMap &copy; CARTO', subdomains:'abcd', maxZoom:19
+}).addTo(map);
+
+const clusterIcon = (color) => L.divIcon({
+  html:`<div style="width:12px;height:12px;background:${color};border-radius:50%;border:2px solid rgba(255,255,255,.3);box-shadow:0 0 8px ${color}60"></div>`,
+  className:'', iconSize:[12,12], iconAnchor:[6,6]
+});
+
+// Sensor clusters
+[
+  {pos:[-10.58,142.22],name:'Torres Strait Alpha',status:'Planned Phase 3'},
+  {pos:[-12.45,130.84],name:'Darwin Harbour',status:'Planned Phase 3'},
+  {pos:[-14.93,128.12],name:'Joseph Bonaparte Gulf',status:'Planned Phase 4'},
+  {pos:[-11.72,136.5],name:'Arafura Sea East',status:'Planned Phase 4'},
+  {pos:[-21.94,114.13],name:'Exmouth (Ningaloo)',status:'Future expansion'},
+  {pos:[-12.18,96.83],name:'Cocos Islands',status:'Future expansion'},
+].forEach(c=>{
+  L.marker(c.pos,{icon:clusterIcon('#00c9b0')}).addTo(map)
+    .bindPopup(`<b style='color:#00c9b0'>${c.name}</b><br><small style='color:#aaa'>${c.status}</small>`);
+});
+
+// IUU hotspots
+[
+  {pos:[-11.0,135.0],name:'Arafura Sea IUU zone'},
+  {pos:[-10.0,141.5],name:'Torres Strait northern approach'},
+  {pos:[-13.5,129.0],name:'Timor Sea corridor'},
+].forEach(z=>{
+  L.circle(z.pos,{radius:120000,color:'#ff6535',fillColor:'#ff6535',fillOpacity:.08,weight:1}).addTo(map)
+    .bindPopup(`<b style='color:#ff6535'>${z.name}</b><br><small style='color:#aaa'>High IUU activity area</small>`);
+});
+
+// Chokepoints
+[
+  {pos:[-10.58,142.22],name:'Torres Strait'},
+  {pos:[-12.45,130.84],name:'Darwin approaches'},
+].forEach(p=>{
+  L.marker(p.pos,{icon:clusterIcon('#f5a623')}).addTo(map)
+    .bindPopup(`<b style='color:#f5a623'>${p.name}</b><br><small style='color:#aaa'>Key maritime chokepoint</small>`);
+});
+
+// ── DEMO DASHBOARD ──
+const ALERTS=[
+  {id:'BKB-0001',type:'IMPOSSIBLE_SPEED',sev:'H',score:98,vessel:'SEA EAGLE',vtype:'Cargo',lat:-11.8,lon:143.75,title:'Implied speed 442 kn — possible spoofing',explain:'Successive AIS positions imply a physically impossible speed, strongly suggesting AIS position spoofing, a false-identity broadcast, or a track-stitching error.',action:'Inspect raw source rows. Compare against alternative AIS feeds, RF/SAR/patrol data. Do not assume identity continuity across this jump.',evidence:'Implied speed 442.4 kn between 2026-05-01T00:45Z and 2026-05-01T00:30Z.'},
+  {id:'BKB-0002',type:'AIS_GAP',sev:'H',score:95,vessel:'NORTHERN PRIDE',vtype:'Fishing',lat:-10.55,lon:142.58,title:'AIS gap of 10.0 h — dark period',explain:'The vessel disappeared from AIS for 10 hours in northern Australian waters. This may indicate intentional disabling to conceal fishing activity.',action:'Review track before/after gap. Cross-check RF, SAR, patrol and VMS sources. Note whether the gap area coincides with known IUU corridors.',evidence:'Last seen 2026-05-01T00:30Z → reappeared 2026-05-01T11:15Z (10h silence).'},
+  {id:'BKB-0003',type:'AIS_GAP',sev:'H',score:95,vessel:'SMALL VESSEL',vtype:'Fishing',lat:-10.38,lon:142.50,title:'AIS gap of 9.0 h — below-threshold vessel',explain:'Sparse, irregular AIS transmissions consistent with a below-threshold vessel (under 300 GT, no AIS obligation) or deliberate silence.',action:'Check vessel registry for AIS obligation. If obligated, escalate. If below threshold, note for RF correlation when hardware available.',evidence:'9h gap detected, vessel type Fishing, irregular prior ping cadence.'},
+  {id:'BKB-0004',type:'LOITERING',sev:'H',score:84,vessel:'MALITA SEA',vtype:'Fishing',lat:-10.82,lon:141.95,title:'Loitering 4.8 h within 3.7 km',explain:'The vessel remains inside a 3.7km radius at <2 kn average speed for 4.8 hours. In northern Australian waters this pattern is consistent with IUU fishing or sea-cucumber harvesting.',action:'Check whether area is a licensed fishing zone. Cross-reference against AFMA authorisation records and VMS data.',evidence:'Span 4.8h; max radius 3.7km from centroid; avg SOG 1.1 kn.'},
+  {id:'BKB-0005',type:'RENDEZVOUS_CANDIDATE',sev:'M',score:78,vessel:'TIMOR CHIEF / CAPE WESSEL',vtype:'Fishing/Fishing',lat:-10.62,lon:142.22,title:'Possible vessel rendezvous',explain:'Two fishing vessels appear within 2km simultaneously. Vessel-to-vessel transfers at sea (catch, fuel, crew) are a known IUU evasion method.',action:'Check vessel types, flag states, licensed activity, and AIS gap history for both parties.',evidence:'503001005/503001006; separation 2.05km; time delta 15 min.'},
+];
+
+const sevColor={H:'#ff6535',M:'#f5a623',L:'#22c55e'};
+const typeLabel={IMPOSSIBLE_SPEED:'Impossible speed',AIS_GAP:'AIS gap',LOITERING:'Loitering',RENDEZVOUS_CANDIDATE:'Rendezvous',SENSITIVE_ZONE:'Sensitive zone'};
+
+// Alert list
+const alertList=document.getElementById('alert-list');
+let activeIdx=-1;
+const demoMap=L.map('demo-map',{center:[-11,142],zoom:7,zoomControl:false});
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+  attribution:'',subdomains:'abcd',maxZoom:19
+}).addTo(demoMap);
+
+// Demo vessel tracks
+const tracks=[
+  {mmsi:'503001001',name:'ARAFURA QUEEN',score:0,coords:[[-10.64,142.10],[-10.63,142.28],[-10.62,142.46],[-10.61,142.64],[-10.60,142.82]]},
+  {mmsi:'503001002',name:'MALITA SEA',score:84,coords:[[-10.82,141.93],[-10.81,141.96],[-10.83,141.97],[-10.82,141.94],[-10.81,141.96]]},
+  {mmsi:'503001003',name:'NORTHERN PRIDE',score:95,coords:[[-11.20,141.80],[-11.15,141.90],[-11.10,142.00],[-10.55,142.58],[-10.52,142.65]]},
+  {mmsi:'503001004',name:'SEA EAGLE',score:98,coords:[[-10.50,142.10],[-10.52,142.25],[-11.80,143.60],[-11.82,143.75]]},
+  {mmsi:'503001005',name:'TIMOR CHIEF',score:78,coords:[[-10.62,142.22],[-10.63,142.23],[-10.64,142.24],[-10.65,142.25]]},
+  {mmsi:'503001006',name:'CAPE WESSEL',score:78,coords:[[-10.64,142.20],[-10.65,142.21],[-10.66,142.22],[-10.67,142.23]]},
+];
+const riskColor=s=>s>=80?'#ff6535':s>=55?'#f5a623':'#22c55e';
+tracks.forEach(t=>{
+  L.polyline(t.coords,{color:riskColor(t.score),weight:t.score>=80?2.5:1.5,opacity:.8}).addTo(demoMap);
+  const last=t.coords[t.coords.length-1];
+  L.circleMarker(last,{radius:t.score>=80?7:5,fillColor:riskColor(t.score),color:'#000',weight:1,fillOpacity:.9}).addTo(demoMap)
+    .bindTooltip(`<b>${t.name}</b><br>Risk ${t.score}`,{className:'',direction:'top'});
+});
+
+ALERTS.forEach((a,i)=>{
+  const div=document.createElement('div');
+  div.className='alert-mini';
+  div.innerHTML=`<div class="alert-mini-top"><span class="sev-pip ${a.sev}">${a.sev==='H'?'HIGH':a.sev==='M'?'MED':'LOW'}</span><span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--muted)">${typeLabel[a.type]||a.type}</span><span style="margin-left:auto;font-family:'Space Mono',monospace;font-size:10px;color:${sevColor[a.sev]}">${a.score}</span></div><div class="alert-mini-title">${a.title}</div><div class="alert-mini-vessel">${a.vessel} · ${a.vtype}</div>`;
+  div.onclick=()=>selectAlert(i);
+  alertList.appendChild(div);
+});
+
+function selectAlert(i){
+  activeIdx=i;
+  document.querySelectorAll('.alert-mini').forEach((d,j)=>d.classList.toggle('active-alert',j===i));
+  const a=ALERTS[i];
+  demoMap.panTo([a.lat,a.lon],{animate:true,duration:.5});
+  document.getElementById('alert-detail').innerHTML=`
+    <div class="detail-row"><span class="dk">ID</span><span class="dv">${a.id}</span></div>
+    <div class="detail-row"><span class="dk">TYPE</span><span class="dv">${typeLabel[a.type]||a.type}</span></div>
+    <div class="detail-row"><span class="dk">SEVERITY</span><span class="dv" style="color:${sevColor[a.sev]}">${a.sev==='H'?'HIGH':a.sev==='M'?'MEDIUM':'LOW'} (${a.score}/100)</span></div>
+    <div class="detail-row"><span class="dk">VESSEL</span><span class="dv">${a.vessel}</span></div>
+    <div class="detail-row"><span class="dk">TYPE</span><span class="dv">${a.vtype}</span></div>
+    <div class="detail-row"><span class="dk">POSITION</span><span class="dv" style="font-family:'Space Mono',monospace">${a.lat.toFixed(3)}, ${a.lon.toFixed(3)}</span></div>
+    <div class="detail-explain">${a.explain}</div>
+    <div class="detail-action"><b style="font-family:'Space Mono',monospace;font-size:10px">RECOMMENDED ACTION</b><br>${a.action}</div>
+    <div style="font-size:10px;color:var(--muted);margin-top:8px;font-family:'Space Mono',monospace;line-height:1.5">${a.evidence}</div>`;
+}
+
+selectAlert(0);
+
+// ── GATES ──
+const GATES=[
+  {num:'G1',name:'Live AIS capture',status:'done',reqs:['RTL-SDR receiving Sydney Harbour AIS','pyais decoding NMEA to TimescaleDB','Dashboard showing real tracks (not synthetic)','Converts simulator to real signal system'],whys:['Proves the software stack works on real signals','One sentence that changes every investor conversation','Gives real anomaly data, not generated rows']},
+  {num:'G2',name:'Real AMSA data',status:'done',reqs:['AMSA monthly CTS CSV downloaded','boobook validate-ais run against it','Dashboard screenshots labelled AIS-only','AMSA identified as credible institutional source'],whys:['Proves anomaly logic on real-world vessel behaviour','Gives investors something non-synthetic to look at','Establishes AMSA as primary data source']},
+  {num:'G3',name:'RF co-founder',status:'now',reqs:['Ex-ADF signals / DSTG / UNSW EE background','Real SDR/GNU Radio field experience','Willing to co-found or advise with equity','Can explain TDOA physics credibly'],whys:['Every investor asks "who is your RF person"','Without this: one person who vibecoded a sim','UNSW D10x application far stronger with this']},
+  {num:'G4',name:'3-node TDOA',status:'next',reqs:['3 receivers + known transmitter + known position','GPS-disciplined timing on all nodes','Measured position error vs known truth','Honest write-up: CEP at km baseline'],whys:['Transforms RF claim from theoretical to validated','What no satellite competitor can say about a fixed corridor','Required for ASCA + any defence customer']},
+  {num:'G5',name:'Paying customer',status:'next',reqs:['Signed contract — AFMA/ABF/port/insurer','Recurring annual monitoring fee','$50–150k ARR minimum','Customer agrees to be referenced'],whys:['Without revenue, raising on hope only','One customer changes entire risk profile','Government = sticky, high-NRR, low churn']},
+  {num:'G6',name:'Unique dataset',status:'next',reqs:['30+ days continuous AIS+RF from one location','Labelled anomaly events with ground truth','Sovereign infrastructure (AUCloud Sydney)','Demonstrably unique Australian corridor data'],whys:['Data is the moat — code can be copied','Acquirers buy data + relationships, not software','Every month makes company harder to replicate']},
+  {num:'G7',name:'Monthly model',status:'next',reqs:['24-month month-by-month cashflow','Conservative: no grant until month 18','Node BOM with real ruggedisation costs','No-contract-until-month-12 survival case'],whys:['Annual view hides 6-month trough before first contract','Investors build this model anyway — better if you did first','Shows you understand the actual risk']},
+];
+const gBadge={done:'gb-done',now:'gb-now',next:'gb-next'};
+const gLabel={done:'Done',now:'Do now',next:'Next'};
+const gGrid=document.getElementById('gates-grid');
+GATES.forEach((g,i)=>{
+  const d=document.createElement('div');
+  d.className=`gate-node gate-${g.status}`;
+  d.innerHTML=`<div class="gate-num">${g.num}</div><div class="gate-name">${g.name}</div><span class="gate-badge ${gBadge[g.status]}">${gLabel[g.status]}</span>`;
+  d.onclick=()=>showGate(i);
+  gGrid.appendChild(d);
+});
+function showGate(i){
+  const g=GATES[i];
+  document.getElementById('gate-detail').innerHTML=`
+    <div class="gate-detail-title">${g.num}: ${g.name} <span class="gate-badge ${gBadge[g.status]}" style="font-size:11px;padding:3px 10px">${gLabel[g.status]}</span></div>
+    <div class="gate-cols">
+      <div><div class="gate-col-label">What's required</div>${g.reqs.map(r=>`<div class="gate-req">${r}</div>`).join('')}</div>
+      <div><div class="gate-col-label">Why investors care</div>${g.whys.map(w=>`<div class="gate-req" style="border-bottom:1px solid rgba(245,166,35,.1)">${w}</div>`).join('')}</div>
+      ${g.blocker?`<div class="gate-blocker">${g.blocker}</div>`:''}
+    </div>`;
+}
+showGate(2);
+
+// ── Leaflet tooltip style ──
+const s=document.createElement('style');
+s.textContent=`.leaflet-popup-content-wrapper{background:#0b1e32!important;border:1px solid #1c3a56!important;color:#c5dce8!important;font-family:'Space Grotesk',sans-serif!important;border-radius:8px!important;box-shadow:none!important}.leaflet-popup-tip{background:#0b1e32!important}`;
+document.head.appendChild(s);
+</script>
+</body>
+</html>
