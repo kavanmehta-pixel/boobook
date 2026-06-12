@@ -242,7 +242,7 @@ def detect_rendezvous(
         return alerts
 
     rows = df.sort_values("timestamp").reset_index(drop=True).copy()
-    patrol_types = {"Law_enforcement", "Military", "SAR"}
+    patrol_types = {"Law_enforcement", "Law Enforcement", "Military", "SAR", "law_enforcement"}
 
     # Build vessel metadata
     vtype_map = rows.groupby("mmsi")["vessel_type"].first().to_dict() if "vessel_type" in rows.columns else {}
@@ -273,7 +273,7 @@ def detect_rendezvous(
                     continue
                 a_type = str(vtype_map.get(a_mmsi, ""))
                 b_type = str(vtype_map.get(b_mmsi, ""))
-                if exclude_same_type_patrol and a_type in patrol_types and b_type in patrol_types:
+                if exclude_same_type_patrol and (a_type in patrol_types or b_type in patrol_types):
                     continue
                 # Get representative rows for distance
                 a_rows = grp[grp["mmsi"].astype(str) == a_mmsi]
