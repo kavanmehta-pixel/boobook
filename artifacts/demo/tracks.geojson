@@ -1,0 +1,117 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "mmsi": "503000001",
+        "vessel_name": "Coral Trader",
+        "risk_score": 98
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            142.12,
+            -10.58
+          ],
+          [
+            142.16,
+            -10.57
+          ],
+          [
+            142.2,
+            -10.55
+          ],
+          [
+            143.0,
+            -11.3
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mmsi": "503000002",
+        "vessel_name": "Arafura Star",
+        "risk_score": 72
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            142.23,
+            -10.62
+          ],
+          [
+            142.23069999999998,
+            -10.6193
+          ],
+          [
+            142.23149999999998,
+            -10.6185
+          ],
+          [
+            142.23229999999998,
+            -10.6177
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mmsi": "503000003",
+        "vessel_name": "Unnamed",
+        "risk_score": 72
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            142.232,
+            -10.618
+          ],
+          [
+            142.232,
+            -10.618
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "mmsi": "503000004",
+        "vessel_name": "Thursday Ferry",
+        "risk_score": 52
+      },
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            142.4,
+            -10.4
+          ],
+          [
+            142.43,
+            -10.38
+          ],
+          [
+            142.46,
+            -10.36
+          ],
+          [
+            142.49,
+            -10.34
+          ],
+          [
+            142.52,
+            -10.32
+          ]
+        ]
+      }
+    }
+  ]
+}
