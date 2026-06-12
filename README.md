@@ -1,137 +1,152 @@
-# Boobook MDA — Investor MVP
+# 🦉 Boobook — Sovereign Australian Maritime Intelligence
 
-**Sovereign Australian maritime intelligence layer.**  
-AIS source-data anomaly detection today. Passive RF/TDOA validation next.
+> *We hear what ships can't hide.*
 
-> **Honest scope:** This repo proves the reproducible analytics workflow on source AIS data.  
-> It does **not** claim live passive-RF dark-vessel detection yet.
+Boobook is a passive RF intelligence layer for Australian maritime enforcement. It detects vessels that go dark — not by trusting their AIS transponder, but by listening for the radio signals every working ship still emits.
 
----
-
-## What this MVP does
-
-| Layer | Status |
-|---|---|
-| Normalise AMSA/CTS-style AIS data | ✅ Working |
-| Detect AIS gaps, impossible speed, loitering, rendezvous, zone presence | ✅ Working |
-| Generate reproducible artefacts: alerts.csv, vessels.csv, tracks.geojson | ✅ Working |
-| Self-contained investor dashboard | ✅ Working |
-| RF/TDOA simulation (planning layer) | ✅ Working |
-| Live SDR capture | ⬜ Next milestone |
-| 3-node controlled TDOA test | ⬜ Phase 2 |
-| Choke-point field deployment | ⬜ Phase 3 |
+**Status: P1 complete. AIS anomaly engine validated. RF simulation done. Seeking RF co-founder.**
 
 ---
 
-## Quick start (no hardware needed)
+## What it does
+
+Ships that disable their AIS still emit: VHF radio, marine radar, satellite phones. Boobook's ground-based SDR nodes receive those emissions, correlate them against AIS, and surface prioritised enforcement alerts for AFMA/ABF.
+
+**Current capability (AIS-only validation layer):**
+- 5 detection rules: AIS gap, impossible speed (spoofing), loitering, rendezvous, sensitive zone
+- Risk scores 0–100 with severity tiers (HIGH/MEDIUM/LOW)
+- Full evidence chain + recommended action per alert
+- AMSA CTS + NOAA MarineCadastre + GFW ingestors
+- GeoJSON track output for map overlays
+- Torres Strait / Arafura / Darwin bbox presets
+
+---
+
+## Quick start
 
 ```bash
-# Install
-pip install -e ".[dev]"
+pip install -e .
 
-# Run all tests (27 tests)
-make test
+# Run demo on synthetic AIS data (133 rows, 9 vessels, all 5 alert types)
+boobook demo --out artifacts/demo
 
-# Full demo: AIS validation + dashboard + RF simulation
-make demo
+# Run on your own AIS CSV
+boobook validate-ais --input your_ais.csv --out artifacts/output
 
-# Or step by step:
-make validate-ais   # normalise sample data, generate alerts
-make dashboard      # build HTML dashboard
-make coverage       # RF cluster coverage summary
-make rf-demo        # TDOA simulation
+# Build training data from NOAA (downloads ~300MB)
+python scripts/build_training_data.py --source noaa
+
+# Clip to Torres Strait
+python scripts/build_training_data.py --source noaa --bbox torres_strait
+
+# Run on AMSA CTS data (download from operations.amsa.gov.au/Spatial/DataServices/DigitalData)
+python scripts/build_training_data.py --source amsa --amsa-file your_amsa.csv --bbox torres_strait
 ```
-
-Open `artifacts/demo/Boobook_Investor_Dashboard.html` in any browser.
 
 ---
 
-## Using real AMSA/CTS data
+## Sample run output
 
-1. Download a vessel traffic dataset from [AMSA Spatial](https://operations.amsa.gov.au/Spatial/DataServices/DigitalData)
-2. Save to `data/raw/`
-3. Run:
-
-```bash
-PYTHONPATH=src python -m boobook.cli validate-ais data/raw/YOUR_FILE.csv --out data/processed/live
-PYTHONPATH=src python -m boobook.cli dashboard --processed data/processed/live --out artifacts/live_dashboard.html
 ```
+Loaded: 133 rows, 9 vessels
+Vessel types: Fishing (73), Cargo (36), Law Enforcement (24)
 
-ZIP files containing a CSV are also accepted.
+Alerts: 14  |  HIGH: 7  |  MEDIUM: 2  |  LOW: 5
+
+Alert types:
+  AIS_GAP:               5
+  SENSITIVE_ZONE:        5
+  RENDEZVOUS_CANDIDATE:  2
+  IMPOSSIBLE_SPEED:      1
+  LOITERING:             1
+
+Top alerts:
+  SEA EAGLE      Cargo   IMPOSSIBLE_SPEED  98  HIGH
+  NORTHERN PRIDE Fishing AIS_GAP           95  HIGH
+  TIMOR CHIEF    Fishing RENDEZVOUS        85  HIGH
+  MALITA SEA     Fishing LOITERING         84  HIGH
+```
 
 ---
 
-## Repo layout
+## Repo structure
 
 ```
 src/boobook/
   ingest/
-    amsa_cts.py         Raw AMSA/CTS CSV/ZIP normalisation + column aliasing
-    live_ais.py         Future pyais SDR decoder hook
+    amsa_cts.py       — AMSA/CTS CSV normaliser (official Australian source)
+    noaa_ais.py       — NOAA MarineCadastre ingestor (large-scale stress testing)
+    gfw_events.py     — Global Fishing Watch AIS-off/encounter/fishing events
+    live_ais.py       — Live AIS via RTL-SDR (Phase 2)
   analytics/
-    ais_anomaly.py      5 detection rules: gaps / speed / loitering / rendezvous / zone
-  dashboard/
-    export.py           Self-contained HTML dashboard generator
+    ais_anomaly.py    — 5 detection rules, risk scoring, GeoJSON output
   rf/
-    coverage.py         Choke-point radio-horizon + TDOA viability
-    gcc_phat.py         GCC-PHAT TDOA timing estimator
-    tdoa_solver.py      Hyperbolic position solver + CEP
-    simulate.py         Deterministic RF/TDOA planning simulation
-  cli.py                boobook {validate-ais, dashboard, coverage, rf-demo, demo}
-  config.py             Cluster definitions + monitoring zones
+    coverage.py       — Radio horizon + TDOA viability
+    gcc_phat.py       — GCC-PHAT cross-correlator
+    tdoa_solver.py    — Hyperbolic solver + CEP estimation
+    simulate.py       — Deterministic RF simulation
+  dashboard/
+    export.py         — HTML dashboard generator
+  cli.py              — boobook CLI
+  config.py           — Sensitive zones, thresholds
+  utils_geo.py        — Haversine, implied speed
 
-data/sample/            133-row synthetic AIS dataset (Torres Strait, 9 vessels, all alert types)
-data/processed/         Generated artefacts (gitignored for live data)
-artifacts/              Dashboard + RF simulation outputs
-tests/                  27 pytest tests (all rules, edge cases, integration)
-docs/                   Demo script, source repos, limitations, validation plan
+scripts/
+  build_training_data.py  — Dataset pipeline (NOAA, AMSA, GFW)
+
+tests/                    — 50 tests, all passing
+data/sample/              — 133-row synthetic AIS (all alert types)
+artifacts/sample_run/     — Latest validated run outputs
+docs/                     — Technical limitations, legal notes, validation plan
 ```
 
 ---
 
-## Alert types
+## Data sources
 
-| Type | Trigger | Typical score |
-|---|---|---|
-| `AIS_GAP` | Silence > 2h (configurable) | 55–95 |
-| `IMPOSSIBLE_SPEED` | Implied speed > 45 kn — AIS spoofing indicator | 70–98 |
-| `LOITERING` | > 2h within 5 km radius at < 3 kn avg — IUU fishing pattern | 60–88 |
-| `RENDEZVOUS_CANDIDATE` | Two vessels < 2 km apart within 30 min window | 65–78 |
-| `SENSITIVE_ZONE` | Vessel inside configured monitoring zone | 52 |
-
-All scores are 0–100. All alerts are hedged: anomalies flag for human review, not proof of illegality.
+| Source | Use | Access |
+|--------|-----|--------|
+| AMSA CTS | Australian sovereign AIS | [operations.amsa.gov.au](https://operations.amsa.gov.au/Spatial/DataServices/DigitalData) |
+| NOAA MarineCadastre | Large-scale AIS stress test | Free, no auth |
+| Danish Maritime Authority | Chokepoint/strait behaviour | [dma.dk](https://www.dma.dk/safety-at-sea/navigational-information/ais-data) |
+| Global Fishing Watch | Fishing/IUU labels, AIS-off events | Free API token required |
+| xView3-SAR | Dark vessel SAR labels | Phase 2 |
 
 ---
 
-## What it does not claim
+## Tests
 
-- Does **not** prove passive RF capture from real SDR hardware
-- Does **not** prove dark-vessel detection
-- Does **not** record or analyse voice/content (metadata only architecture)
-- Does **not** allege illegal activity from AIS anomalies alone
-- Does **not** claim regional/continental coverage — RF concept is choke-point cluster monitoring
-- Ground-based VHF/AIS LOS is ~35–50 km; TDOA requires ≥3 nodes hearing the same emitter
+```bash
+pytest tests/ -v   # 50 tests, ~1s
+```
 
----
-
-## Funding and grant reality
-
-DIDG is **not** core R&D/prototyping funding. Defence guidance says applications are likely ineligible for product development, prototyping, R&D, or non-recurring engineering. Core technical validation is funded via pre-seed, customer pilots, and RDTI where eligible. RDTI is in arrears — not upfront cash.
+Coverage: AMSA ingest, NOAA ingest, GFW ingest, all 5 anomaly detectors, RF coverage, GCC-PHAT, TDOA solver.
 
 ---
 
-## Investor framing
+## Roadmap
 
-> Boobook currently validates the maritime analytics workflow on AIS source data —  
-> flagging the same behaviours an enforcement analyst cares about.  
-> The product becomes materially stronger when AIS anomalies are fused with  
-> independent passive RF detections inside instrumented choke points.  
-> Next milestone: live Sydney Harbour AIS capture via RTL-SDR.  
-> Then: controlled 3-node TDOA test.  
-> Then: one paid AFMA/ABF pilot.
+| Phase | Status | Milestone |
+|-------|--------|-----------|
+| P1 | ✅ Done | AIS engine, AMSA pipeline, TDOA simulation, 50 tests |
+| P2 | 🔶 Now | RF co-founder, live AIS via RTL-SDR, 3-node TDOA test |
+| P3 | — | First paid AFMA/ABF pilot, Torres Strait deployment |
+| P4 | — | $250k+ ARR, seed raise |
 
 ---
 
-## Compliance posture
+## Investor site
 
-Receive-only architecture. Any live RF phase must be metadata-only (no voice/content capture), reviewed against ACMA licensing requirements and the TIA Act before field deployment. Legal review required per deployment before any live operation.
+**[kavanmehta-pixel.github.io/boobook](https://kavanmehta-pixel.github.io/boobook)**
+
+---
+
+## Legal
+
+AIS anomalies are not proof of illegal behaviour. All alerts are cueing signals for human review. Passive receive-only architecture. This system does not intercept vessel communications content.
+
+See `docs/LEGAL_COMPLIANCE_NOTES.md` and `docs/TECHNICAL_LIMITATIONS.md`.
+
+---
+
+*Built by [Attalis Capital](https://attalis.com.au). Seeking RF/signals co-founder — ex-ADF, DSTG, UNSW EE.*
