@@ -287,7 +287,10 @@ def detect_rendezvous(
                     continue
                 seen_pairs.add(pair)
                 dt_min = abs((b_row["timestamp"] - a_row["timestamp"]).total_seconds()) / 60
-                score = 78
+                # Score higher when both are fishing (classic IUU transshipment pattern)
+                high_concern = {"Fishing", "Unknown", ""}
+                both_concern = a_type in high_concern and b_type in high_concern
+                score = 85 if both_concern else 78
                 a_name = vname_map.get(a_mmsi, a_mmsi)
                 b_name = vname_map.get(b_mmsi, b_mmsi)
                 _alert(
