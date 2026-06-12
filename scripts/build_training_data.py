@@ -58,9 +58,10 @@ def print_summary(source, df, alerts_df):
         for t, n in alerts_df["alert_type"].value_counts().items():
             print(f"    {t}: {n}")
     if not alerts_df.empty:
-        cols = [c for c in ["vessel_name","vessel_type","alert_type","score","severity"] if c in alerts_df.columns]
+        cols = [c for c in ["vessel_name","vessel_type","alert_type","risk_score","severity"] if c in alerts_df.columns]
         print("\n  Top 10 by risk score:")
-        print(alerts_df.nlargest(min(10,len(alerts_df)), "score")[cols].to_string(index=False))
+        score_col = "risk_score" if "risk_score" in alerts_df.columns else "score"
+        print(alerts_df.nlargest(min(10,len(alerts_df)), score_col)[cols].to_string(index=False))
     print()
 
 
@@ -87,7 +88,7 @@ def run_noaa(out_dir: Path, bbox_name: str | None):
     df.to_csv(out_dir / f"{tag}_tracks.csv", index=False)
 
     log.info("Running anomaly detection on %d rows...", len(df))
-    _, alerts_df, _, stats = run_validation(df)
+    alerts_df, _, _, stats = run_validation(df)
     print_summary(f"NOAA 2023-01-01 [{bbox_name or 'global'}]", df, alerts_df)
 
     if not alerts_df.empty:
@@ -106,7 +107,7 @@ def run_amsa(amsa_file: str, out_dir: Path, bbox_name: str | None):
     tag = f"amsa_{bbox_name or 'australia'}"
     df.to_csv(out_dir / f"{tag}_tracks.csv", index=False)
 
-    _, alerts_df, _, stats = run_validation(df)
+    alerts_df, _, _, stats = run_validation(df)
     print_summary(f"AMSA [{bbox_name or 'australia'}]", df, alerts_df)
     if not alerts_df.empty:
         alerts_df.to_csv(out_dir / f"{tag}_alerts.csv", index=False)
