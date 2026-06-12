@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+
+# Env
+.env
+.venv
+env/
+
+# Large data files (download via scripts/build_training_data.py)
+data/noaa_raw/
+data/processed/
+data/*.zip
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+.ipynb_checkpoints/
