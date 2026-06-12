@@ -1,0 +1,9 @@
+{
+  "rows": 15,
+  "vessels": 4,
+  "alerts": 7,
+  "high_alerts": 1,
+  "medium_alerts": 3,
+  "time_min": "2026-04-05T00:00:00+00:00",
+  "time_max": "2026-04-05T04:10:00+00:00"
+}
