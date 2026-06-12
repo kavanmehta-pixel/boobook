@@ -669,7 +669,7 @@ footer{padding:40px 64px;background:var(--void);border-top:1px solid rgba(255,25
 
 <script>
 // ── MAP ──
-const map = L.map('map', {center:[-12, 134], zoom:5, zoomControl:true});
+const map = L.map('map', {center:[-11.5, 136], zoom:6, zoomControl:true});
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
   attribution:'&copy; OpenStreetMap &copy; CARTO', subdomains:'abcd', maxZoom:19
 }).addTo(map);
@@ -679,14 +679,14 @@ const clusterIcon = (color) => L.divIcon({
   className:'', iconSize:[12,12], iconAnchor:[6,6]
 });
 
-// Sensor clusters
+// Sensor clusters — all in credible northern approaches range
 [
   {pos:[-10.58,142.22],name:'Torres Strait Alpha',status:'Planned Phase 3'},
+  {pos:[-10.85,142.65],name:'Torres Strait Beta',status:'Planned Phase 3'},
   {pos:[-12.45,130.84],name:'Darwin Harbour',status:'Planned Phase 3'},
+  {pos:[-11.72,136.5], name:'Arafura Sea East',status:'Planned Phase 4'},
   {pos:[-14.93,128.12],name:'Joseph Bonaparte Gulf',status:'Planned Phase 4'},
-  {pos:[-11.72,136.5],name:'Arafura Sea East',status:'Planned Phase 4'},
-  {pos:[-21.94,114.13],name:'Exmouth (Ningaloo)',status:'Future expansion'},
-  {pos:[-12.18,96.83],name:'Cocos Islands',status:'Future expansion'},
+  {pos:[-13.85,136.42],name:'Gulf of Carpentaria North',status:'Planned Phase 4'},
 ].forEach(c=>{
   L.marker(c.pos,{icon:clusterIcon('#00c9b0')}).addTo(map)
     .bindPopup(`<b style='color:#00c9b0'>${c.name}</b><br><small style='color:#aaa'>${c.status}</small>`);
@@ -697,8 +697,9 @@ const clusterIcon = (color) => L.divIcon({
   {pos:[-11.0,135.0],name:'Arafura Sea IUU zone'},
   {pos:[-10.0,141.5],name:'Torres Strait northern approach'},
   {pos:[-13.5,129.0],name:'Timor Sea corridor'},
+  {pos:[-12.5,136.8],name:'Gulf of Carpentaria west'},
 ].forEach(z=>{
-  L.circle(z.pos,{radius:120000,color:'#ff6535',fillColor:'#ff6535',fillOpacity:.08,weight:1}).addTo(map)
+  L.circle(z.pos,{radius:100000,color:'#ff6535',fillColor:'#ff6535',fillOpacity:.08,weight:1}).addTo(map)
     .bindPopup(`<b style='color:#ff6535'>${z.name}</b><br><small style='color:#aaa'>High IUU activity area</small>`);
 });
 
