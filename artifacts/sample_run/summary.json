@@ -1,0 +1,16 @@
+{
+  "rows": 133,
+  "vessels": 9,
+  "alerts": 14,
+  "high_alerts": 7,
+  "medium_alerts": 2,
+  "time_min": "2026-05-01T00:00:00+00:00",
+  "time_max": "2026-05-02T02:00:00+00:00",
+  "alert_types": {
+    "AIS_GAP": 5,
+    "SENSITIVE_ZONE": 5,
+    "RENDEZVOUS_CANDIDATE": 2,
+    "IMPOSSIBLE_SPEED": 1,
+    "LOITERING": 1
+  }
+}
