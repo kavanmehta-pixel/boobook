@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass, asdict
 from pathlib import Path
 import json
+import math
 import pandas as pd
 from boobook.utils_geo import haversine_km, implied_speed_knots
 from boobook.config import SENSITIVE_ZONES
@@ -143,7 +144,6 @@ def detect_impossible_speed(
             )
             if speed_kn >= max_implied_knots:
                 speed_delta = speed_kn - max_implied_knots
-                import math
                 if math.isinf(speed_delta) or math.isnan(speed_delta) or speed_delta > 1e9:
                     score = 98
                 else:
