@@ -1,0 +1,15 @@
+{
+  "rows": 28988,
+  "vessels": 18,
+  "alerts": 217,
+  "high_alerts": 59,
+  "medium_alerts": 156,
+  "time_min": "2023-01-01T06:18:37.493394+00:00",
+  "time_max": "2023-01-30T23:54:18.822393+00:00",
+  "alert_types": {
+    "AIS_GAP": 165,
+    "RENDEZVOUS_CANDIDATE": 48,
+    "IMPOSSIBLE_SPEED": 2,
+    "SENSITIVE_ZONE": 2
+  }
+}
