@@ -52,6 +52,28 @@ def _map_type(raw) -> str:
     return "Other"
 
 
+
+def _parse_amsa_timestamps(series: "pd.Series") -> "pd.Series":
+    """Parse AMSA CTS timestamp strings to UTC.
+
+    Handles two known formats:
+      '16/05/2026 11:22:47 AM'  (2026 files)
+      '2/12/2022 5:06:00 PM'    (2022 files)
+    Both are day/month/year, 12-hour clock, Australian local time (AEST/AWST).
+    CTS data is recorded in UTC per AMSA documentation.
+    """
+    # Try specific format first (fast), fall back to inference
+    try:
+        return pd.to_datetime(series, format="%d/%m/%Y %I:%M:%S %p", errors="coerce", utc=True)
+    except Exception:
+        pass
+    # Mixed-format fallback
+    parsed = pd.to_datetime(series, dayfirst=True, errors="coerce")
+    if parsed.dt.tz is None:
+        parsed = parsed.dt.tz_localize("UTC")
+    return parsed
+
+
 def load_amsa_shp(
     path: str | Path,
     bbox: tuple[float, float, float, float] | None = None,
@@ -106,7 +128,7 @@ def load_amsa_shp(
 
     df = pd.DataFrame({
         "mmsi":        gdf["CRAFT_ID"].astype(str).str.replace(r"\.0$", "", regex=True).str.strip(),
-        "timestamp":   pd.to_datetime(gdf["TIMESTAMP"], dayfirst=True, errors="coerce", utc=True),
+        "timestamp":   _parse_amsa_timestamps(gdf["TIMESTAMP"]),
         "lat":         pd.to_numeric(gdf["LAT"],   errors="coerce"),
         "lon":         pd.to_numeric(gdf["LON"],   errors="coerce"),
         "sog":         pd.to_numeric(gdf["SPEED"], errors="coerce"),
@@ -118,6 +140,8 @@ def load_amsa_shp(
 
     df = df.dropna(subset=["mmsi","timestamp","lat","lon"])
     df = df[df["mmsi"].ne("") & df["mmsi"].ne("nan")]
+    # Filter invalid CRAFT_IDs: negative values are AMSA internal tracking IDs, not MMSIs
+    df = df[~df["mmsi"].str.startswith("-")]
     df = df.sort_values(["mmsi","timestamp"]).drop_duplicates(["mmsi","timestamp","lat","lon"])
     log.info("AMSA load: %d rows, %d vessels", len(df), df["mmsi"].nunique())
     return df.reset_index(drop=True)
