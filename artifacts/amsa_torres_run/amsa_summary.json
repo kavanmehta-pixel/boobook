@@ -1,0 +1,21 @@
+{
+  "source": "AMSA_CTS",
+  "months": [
+    "2022-12",
+    "2026-04",
+    "2026-05"
+  ],
+  "total_rows": 34498,
+  "total_vessel_months": 983,
+  "unique_vessels_dec22": 403,
+  "unique_vessels_apr26": 331,
+  "unique_vessels_may26": 249,
+  "vessels_in_all_3_months": 29,
+  "total_alerts": 1480,
+  "alert_types": {
+    "AIS_GAP": 1348,
+    "SENSITIVE_ZONE": 125,
+    "LOITERING": 7
+  },
+  "fishing_gap_alerts": 33
+}
