@@ -1,8 +1,8 @@
-# 🦉 Boobook — Sovereign Australian Maritime Intelligence
+# 🦉 Ninox — Sovereign Australian Maritime Intelligence
 
 > *We hear what ships can't hide.*
 
-Boobook is a passive RF intelligence layer for Australian maritime enforcement. It detects vessels that go dark — not by trusting their AIS transponder, but by listening for the radio signals every working ship still emits.
+Ninox is a passive RF intelligence layer for Australian maritime enforcement. It detects vessels that go dark — not by trusting their AIS transponder, but by listening for the radio signals every working ship still emits.
 
 **Status: P1 complete. AIS anomaly engine validated. RF simulation done. Seeking RF co-founder.**
 
@@ -10,7 +10,7 @@ Boobook is a passive RF intelligence layer for Australian maritime enforcement. 
 
 ## What it does
 
-Ships that disable their AIS still emit: VHF radio, marine radar, satellite phones. Boobook's ground-based SDR nodes receive those emissions, correlate them against AIS, and surface prioritised enforcement alerts for AFMA/ABF.
+Ships that disable their AIS still emit: VHF radio, marine radar, satellite phones. Ninox's ground-based SDR nodes receive those emissions, correlate them against AIS, and surface prioritised enforcement alerts for AFMA/ABF.
 
 **Current capability (AIS-only validation layer):**
 - 5 detection rules: AIS gap, impossible speed (spoofing), loitering, rendezvous, sensitive zone
@@ -28,10 +28,10 @@ Ships that disable their AIS still emit: VHF radio, marine radar, satellite phon
 pip install -e .
 
 # Run demo on synthetic AIS data (133 rows, 9 vessels, all 5 alert types)
-boobook demo --out artifacts/demo
+ninox demo --out artifacts/demo
 
 # Run on your own AIS CSV
-boobook validate-ais --input your_ais.csv --out artifacts/output
+ninox validate-ais --input your_ais.csv --out artifacts/output
 
 # Build training data from NOAA (downloads ~300MB)
 python scripts/build_training_data.py --source noaa
@@ -72,7 +72,7 @@ Top alerts:
 ## Repo structure
 
 ```
-src/boobook/
+src/ninox/
   ingest/
     amsa_cts.py       — AMSA/CTS CSV normaliser (official Australian source)
     noaa_ais.py       — NOAA MarineCadastre ingestor (large-scale stress testing)
@@ -87,7 +87,7 @@ src/boobook/
     simulate.py       — Deterministic RF simulation
   dashboard/
     export.py         — HTML dashboard generator
-  cli.py              — boobook CLI
+  cli.py              — ninox CLI
   config.py           — Sensitive zones, thresholds
   utils_geo.py        — Haversine, implied speed
 
@@ -137,7 +137,7 @@ Coverage: AMSA ingest, NOAA ingest, GFW ingest, all 5 anomaly detectors, RF cove
 
 ## Investor site
 
-**[kavanmehta-pixel.github.io/boobook](https://kavanmehta-pixel.github.io/boobook)**
+**[kavanmehta-pixel.github.io/ninox](https://kavanmehta-pixel.github.io/ninox)**
 
 ---
 

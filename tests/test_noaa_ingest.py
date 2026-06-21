@@ -2,7 +2,7 @@
 import io
 import pandas as pd
 import pytest
-from boobook.ingest.noaa_ais import load_noaa_csv, _vessel_type_label
+from ninox.ingest.noaa_ais import load_noaa_csv, _vessel_type_label
 
 
 # ── vessel type mapping ──────────────────────────────────────────────────────

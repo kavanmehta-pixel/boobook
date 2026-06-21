@@ -1,5 +1,5 @@
 import pandas as pd
-from boobook.ingest.amsa_cts import normalise_dataframe
+from ninox.ingest.amsa_cts import normalise_dataframe
 
 
 def test_normalise_dataframe_aliases_and_bounds():

@@ -1,6 +1,6 @@
 # Source data and open-source repo map
 
-These are the public sources Boobook should anchor to.
+These are the public sources Ninox should anchor to.
 
 | Layer | Source / repo | Why it matters | MVP use |
 |---|---|---|---|

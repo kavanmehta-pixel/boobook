@@ -3,7 +3,7 @@ import pathlib
 import tempfile
 import pandas as pd
 import pytest
-from boobook.ingest.gfw_events import load_gfw_events, GFW_COLUMNS
+from ninox.ingest.gfw_events import load_gfw_events, GFW_COLUMNS
 
 
 def _make_gfw_csv(content: str) -> pathlib.Path:

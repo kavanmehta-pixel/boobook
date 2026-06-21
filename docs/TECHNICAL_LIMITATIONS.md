@@ -17,4 +17,4 @@
 
 ## Product limitation
 
-Boobook is a cueing and validation layer. It reduces search area and prioritises analyst review. It is not a replacement for patrol assets, SAR, EO/SAR satellite imagery, boarding, or lawful investigation.
+Ninox is a cueing and validation layer. It reduces search area and prioritises analyst review. It is not a replacement for patrol assets, SAR, EO/SAR satellite imagery, boarding, or lawful investigation.

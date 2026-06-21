@@ -1,7 +1,7 @@
 """
 NOAA MarineCadastre AIS ingestor.
 
-Normalises NOAA daily AIS CSV → boobook canonical DataFrame format:
+Normalises NOAA daily AIS CSV → ninox canonical DataFrame format:
   mmsi, timestamp, lat, lon, sog, cog, vessel_name, vessel_type, source
 
 NOAA columns: MMSI, BaseDateTime, LAT, LON, SOG, COG, Heading,
@@ -9,7 +9,7 @@ NOAA columns: MMSI, BaseDateTime, LAT, LON, SOG, COG, Heading,
               Length, Width, Draft, Cargo, TransceiverClass
 
 Usage:
-    from boobook.ingest.noaa_ais import load_noaa_csv
+    from ninox.ingest.noaa_ais import load_noaa_csv
     df = load_noaa_csv("AIS_2023_01_01.csv")
     df_torres = load_noaa_csv("AIS_2023_01_01.csv", bbox=(141.0, -11.5, 144.5, -8.5))
 """
@@ -41,7 +41,7 @@ def load_noaa_csv(
     bbox: tuple[float, float, float, float] | None = None,
 ) -> pd.DataFrame:
     """
-    Load NOAA AIS CSV into a canonical boobook DataFrame.
+    Load NOAA AIS CSV into a canonical ninox DataFrame.
 
     Parameters
     ----------

@@ -1,5 +1,5 @@
 import numpy as np
-from boobook.rf.tdoa_solver import make_tdoa, solve_tdoa
+from ninox.rf.tdoa_solver import make_tdoa, solve_tdoa
 
 
 def test_tdoa_solver_recovers_synthetic_point():

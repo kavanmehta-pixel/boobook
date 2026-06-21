@@ -9,10 +9,10 @@ Handles GFW CSV event formats:
 GFW CSV schema varies by event type but always includes:
   vessel_id, vessel_mmsi, start, end, lat, lon, event_type, ...
 
-These become pre-labelled training examples for boobook's anomaly engine.
+These become pre-labelled training examples for ninox's anomaly engine.
 
 Usage:
-    from boobook.ingest.gfw_events import load_gfw_events
+    from ninox.ingest.gfw_events import load_gfw_events
     df = load_gfw_events("gfw_ais_off_events.csv", event_type="ais_off")
 """
 from __future__ import annotations

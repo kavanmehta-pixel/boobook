@@ -1,4 +1,4 @@
-"""AIS anomaly detection — Boobook source-data validation layer.
+"""AIS anomaly detection — Ninox source-data validation layer.
 
 Five detection rules:
   1. AIS gap          — transmission silence exceeding threshold
@@ -16,8 +16,8 @@ from pathlib import Path
 import json
 import math
 import pandas as pd
-from boobook.utils_geo import haversine_km, implied_speed_knots
-from boobook.config import SENSITIVE_ZONES
+from ninox.utils_geo import haversine_km, implied_speed_knots
+from ninox.config import SENSITIVE_ZONES
 
 # Vessel types that elevate risk scores in remote-area anomaly contexts
 _HIGH_CONCERN_TYPES = {"Fishing", "Tanker", "Unknown", "Other", ""}

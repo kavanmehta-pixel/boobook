@@ -1,5 +1,5 @@
 import numpy as np
-from boobook.rf.gcc_phat import gcc_phat
+from ninox.rf.gcc_phat import gcc_phat
 
 
 def test_gcc_phat_known_integer_delay():

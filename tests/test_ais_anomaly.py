@@ -1,7 +1,7 @@
 """Tests for AIS anomaly detection rules."""
 import pandas as pd
 import pytest
-from boobook.analytics.ais_anomaly import (
+from ninox.analytics.ais_anomaly import (
     detect_gaps, detect_impossible_speed, detect_loitering,
     detect_rendezvous, detect_sensitive_zone, run_validation,
 )
@@ -174,7 +174,7 @@ class TestSensitiveZone:
 # ── Integration ─────────────────────────────────────────────────────────────
 class TestIntegration:
     def test_run_validation_all_types_present(self):
-        from boobook.ingest.amsa_cts import normalise_file
+        from ninox.ingest.amsa_cts import normalise_file
         import pathlib
         sample = pathlib.Path("data/sample/sample_ais_events.csv")
         if not sample.exists():
@@ -198,12 +198,12 @@ class TestIntegration:
     def test_malformed_csv_handled(self, tmp_path):
         f = tmp_path / "bad.csv"
         f.write_text("mmsi,timestamp,lat,lon\nNOT_A_NUMBER,bad_ts,bad_lat,bad_lon\n")
-        from boobook.ingest.amsa_cts import normalise_file
+        from ninox.ingest.amsa_cts import normalise_file
         df = normalise_file(f)
         assert len(df) == 0  # all rows dropped — bad numeric / OOB bounds
 
     def test_outputs_written(self, tmp_path):
-        from boobook.analytics.ais_anomaly import write_validation_outputs
+        from ninox.analytics.ais_anomaly import write_validation_outputs
         rows = [
             ["503001","2026-01-01T00:00:00Z",-10.5,142.1,10,90,"A","Cargo","t"],
             ["503001","2026-01-01T06:00:00Z",-10.6,142.2,10,90,"A","Cargo","t"],

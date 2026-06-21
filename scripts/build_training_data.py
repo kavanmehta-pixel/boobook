@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Boobook training data pipeline.
+Ninox training data pipeline.
 Downloads/processes AIS datasets and runs anomaly detection.
 
 Usage:
@@ -17,9 +17,9 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
 log = logging.getLogger(__name__)
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from boobook.ingest.noaa_ais import load_noaa_csv
-from boobook.ingest.amsa_cts import normalise_file
-from boobook.analytics.ais_anomaly import run_validation
+from ninox.ingest.noaa_ais import load_noaa_csv
+from ninox.ingest.amsa_cts import normalise_file
+from ninox.analytics.ais_anomaly import run_validation
 
 BBOXES = {
     "torres_strait":  (141.0, -11.5, 144.5,  -8.5),

@@ -1,7 +1,7 @@
 """AMSA/CTS AIS CSV normalisation.
 
 The MVP accepts user-downloaded AMSA Spatial/Craft Tracking System CSVs or
-similar AIS exports and maps common column variants to Boobook's canonical
+similar AIS exports and maps common column variants to Ninox's canonical
 schema:
 
 mmsi,timestamp,lat,lon,sog,cog,vessel_name,vessel_type,source

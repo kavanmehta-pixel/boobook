@@ -2,14 +2,14 @@
 AMSA CTS Shapefile ingestor.
 
 Reads AMSA monthly vessel traffic shapefiles (cts_srr_MM_YYYY_pt.shp)
-and normalises to the boobook canonical DataFrame format.
+and normalises to the ninox canonical DataFrame format.
 
 AMSA CTS shapefile columns:
   CRAFT_ID, LON, LAT, COURSE, SPEED, TYPE, SUBTYPE,
   LENGTH, BEAM, DRAUGHT, TIMESTAMP, geometry
 
 Usage:
-    from boobook.ingest.amsa_shp import load_amsa_shp
+    from ninox.ingest.amsa_shp import load_amsa_shp
     df = load_amsa_shp("cts_srr_05_2026_pt.shp")
     df_ts = load_amsa_shp("cts_srr_05_2026_pt.shp", bbox=(141.0,-11.5,144.5,-8.5))
 """
@@ -20,7 +20,7 @@ import pandas as pd
 
 log = logging.getLogger(__name__)
 
-# Map AMSA TYPE strings → boobook canonical vessel_type
+# Map AMSA TYPE strings → ninox canonical vessel_type
 _TYPE_MAP = {
     "Fishing":                     "Fishing",
     "Cargo ship - All":            "Cargo",
@@ -80,7 +80,7 @@ def load_amsa_shp(
     month_label: str | None = None,
 ) -> pd.DataFrame:
     """
-    Load an AMSA CTS shapefile into canonical boobook DataFrame.
+    Load an AMSA CTS shapefile into canonical ninox DataFrame.
 
     Parameters
     ----------

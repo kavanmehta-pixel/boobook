@@ -546,7 +546,7 @@ The sovereign persistent coverage argument is insurmountable for the Australian 
 
 ## Compliance and lawful collection boundary
 
-Boobook should be architected as a metadata-first system. Early prototypes should focus on AIS reception, controlled test transmissions and non-content RF metadata. Do not record VHF voice content, satellite-phone payloads or private communications. Live deployments require an ACMA/TIA review, a clear lawful basis, and written customer authorisation.
+Ninox should be architected as a metadata-first system. Early prototypes should focus on AIS reception, controlled test transmissions and non-content RF metadata. Do not record VHF voice content, satellite-phone payloads or private communications. Live deployments require an ACMA/TIA review, a clear lawful basis, and written customer authorisation.
 
 ---
 

@@ -1,4 +1,4 @@
-from boobook.rf.coverage import radio_horizon_km, cluster_summary, tdoa_viable
+from ninox.rf.coverage import radio_horizon_km, cluster_summary, tdoa_viable
 
 
 def test_radio_horizon_positive():

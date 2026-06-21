@@ -7,19 +7,19 @@ test:
 	PYTHONPATH=src python -m pytest tests/ -v
 
 demo:
-	PYTHONPATH=src python -m boobook.cli demo --out artifacts/demo
+	PYTHONPATH=src python -m ninox.cli demo --out artifacts/demo
 
 validate-ais:
-	PYTHONPATH=src python -m boobook.cli validate-ais data/sample/sample_ais_events.csv --out data/processed/sample
+	PYTHONPATH=src python -m ninox.cli validate-ais data/sample/sample_ais_events.csv --out data/processed/sample
 
 dashboard:
-	PYTHONPATH=src python -m boobook.cli dashboard --processed data/processed/sample --out artifacts/Boobook_Investor_Dashboard.html
+	PYTHONPATH=src python -m ninox.cli dashboard --processed data/processed/sample --out artifacts/Ninox_Investor_Dashboard.html
 
 coverage:
-	PYTHONPATH=src python -m boobook.cli coverage
+	PYTHONPATH=src python -m ninox.cli coverage
 
 rf-demo:
-	PYTHONPATH=src python -m boobook.cli rf-demo --out artifacts
+	PYTHONPATH=src python -m ninox.cli rf-demo --out artifacts
 
 clean:
-	rm -rf data/processed artifacts/demo __pycache__ src/boobook/__pycache__ .pytest_cache
+	rm -rf data/processed artifacts/demo __pycache__ src/ninox/__pycache__ .pytest_cache

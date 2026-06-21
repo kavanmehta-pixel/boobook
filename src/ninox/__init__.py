@@ -1,4 +1,4 @@
-"""Boobook MDA investor MVP.
+"""Ninox MDA investor MVP.
 
 AIS source-data validation now; passive RF/TDOA validation next.
 """

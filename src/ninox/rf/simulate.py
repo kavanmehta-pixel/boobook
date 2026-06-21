@@ -2,7 +2,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import numpy as np
-from boobook.rf.tdoa_solver import make_tdoa, solve_tdoa
+from ninox.rf.tdoa_solver import make_tdoa, solve_tdoa
 
 
 def run_rf_simulation(out_dir: str | Path = "artifacts") -> dict:

@@ -36,7 +36,7 @@ SAMPLE_ROWS = [
 
 class TestLoadAMSAShp:
     def test_basic_load(self, tmp_path):
-        from boobook.ingest.amsa_shp import load_amsa_shp
+        from ninox.ingest.amsa_shp import load_amsa_shp
         shp = _make_shp(SAMPLE_ROWS, tmp_path)
         df = load_amsa_shp(shp)
         # Should have all rows except the negative CRAFT_ID one
@@ -44,13 +44,13 @@ class TestLoadAMSAShp:
         assert set(df.columns) >= {"mmsi","timestamp","lat","lon","sog","cog","vessel_name","vessel_type","source"}
 
     def test_negative_craft_id_filtered(self, tmp_path):
-        from boobook.ingest.amsa_shp import load_amsa_shp
+        from ninox.ingest.amsa_shp import load_amsa_shp
         shp = _make_shp(SAMPLE_ROWS, tmp_path)
         df = load_amsa_shp(shp)
         assert not df["mmsi"].str.startswith("-").any()
 
     def test_bbox_clips(self, tmp_path):
-        from boobook.ingest.amsa_shp import load_amsa_shp
+        from ninox.ingest.amsa_shp import load_amsa_shp
         shp = _make_shp(SAMPLE_ROWS, tmp_path)
         # Torres Strait only
         df = load_amsa_shp(shp, bbox=(141.0, -11.5, 144.5, -8.5))
@@ -58,7 +58,7 @@ class TestLoadAMSAShp:
         assert not ((df["lon"] > 150).any())
 
     def test_vessel_type_mapped(self, tmp_path):
-        from boobook.ingest.amsa_shp import load_amsa_shp
+        from ninox.ingest.amsa_shp import load_amsa_shp
         shp = _make_shp(SAMPLE_ROWS, tmp_path)
         df = load_amsa_shp(shp)
         types = df["vessel_type"].unique()
@@ -70,41 +70,41 @@ class TestLoadAMSAShp:
         assert "Law enforcement" not in types
 
     def test_timestamps_utc(self, tmp_path):
-        from boobook.ingest.amsa_shp import load_amsa_shp
+        from ninox.ingest.amsa_shp import load_amsa_shp
         shp = _make_shp(SAMPLE_ROWS, tmp_path)
         df = load_amsa_shp(shp)
         assert hasattr(df["timestamp"].dtype, "tz")
         assert str(df["timestamp"].dtype.tz) == "UTC"
 
     def test_both_timestamp_formats_parsed(self, tmp_path):
-        from boobook.ingest.amsa_shp import load_amsa_shp
+        from ninox.ingest.amsa_shp import load_amsa_shp
         shp = _make_shp(SAMPLE_ROWS, tmp_path)
         df = load_amsa_shp(shp)
         # Both 2026 and 2022 format rows should parse without NaT
         assert df["timestamp"].isna().sum() == 0
 
     def test_source_tag(self, tmp_path):
-        from boobook.ingest.amsa_shp import load_amsa_shp
+        from ninox.ingest.amsa_shp import load_amsa_shp
         shp = _make_shp(SAMPLE_ROWS, tmp_path)
         df = load_amsa_shp(shp, month_label="2026-05")
         assert (df["source"] == "AMSA_CTS_2026-05").all()
 
     def test_sorted_by_mmsi_timestamp(self, tmp_path):
-        from boobook.ingest.amsa_shp import load_amsa_shp
+        from ninox.ingest.amsa_shp import load_amsa_shp
         shp = _make_shp(SAMPLE_ROWS, tmp_path)
         df = load_amsa_shp(shp)
         for mmsi, g in df.groupby("mmsi"):
             assert list(g["timestamp"]) == sorted(g["timestamp"])
 
     def test_directory_input(self, tmp_path):
-        from boobook.ingest.amsa_shp import load_amsa_shp
+        from ninox.ingest.amsa_shp import load_amsa_shp
         _make_shp(SAMPLE_ROWS, tmp_path)
         # Pass directory instead of .shp path
         df = load_amsa_shp(tmp_path)
         assert len(df) > 0
 
     def test_empty_bbox_returns_empty(self, tmp_path):
-        from boobook.ingest.amsa_shp import load_amsa_shp
+        from ninox.ingest.amsa_shp import load_amsa_shp
         shp = _make_shp(SAMPLE_ROWS, tmp_path)
         df = load_amsa_shp(shp, bbox=(0.0, 0.0, 1.0, 1.0))
         assert len(df) == 0

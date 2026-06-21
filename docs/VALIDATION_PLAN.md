@@ -3,7 +3,7 @@
 ## Phase 1 — source data proof (weeks 1-2)
 
 - Download AMSA/CTS monthly vessel traffic dataset.
-- Run `boobook validate-ais`.
+- Run `ninox validate-ais`.
 - Generate dashboard and manually inspect flagged tracks.
 - Record 5-10 alert examples with screenshots and source-row evidence.
 

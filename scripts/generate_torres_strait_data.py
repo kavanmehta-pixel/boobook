@@ -230,7 +230,7 @@ for i, (mmsi, name, vtype, flag) in enumerate(cargo_vessels):
     ))
 
 # 6. DARK VESSEL — AIS mostly off, only occasional pings
-# This is the star of the show: the vessel boobook is designed to detect
+# This is the star of the show: the vessel ninox is designed to detect
 all_rows.extend(make_track(
     "510099999", "DARK VESSEL", "Fishing", "IDN",
     start_lat=-10.9, start_lon=143.2,

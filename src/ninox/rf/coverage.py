@@ -1,8 +1,8 @@
 from __future__ import annotations
 import math
 from dataclasses import asdict
-from boobook.config import TORRES_STRAIT_CLUSTER, ChokePointCluster
-from boobook.utils_geo import haversine_km
+from ninox.config import TORRES_STRAIT_CLUSTER, ChokePointCluster
+from ninox.utils_geo import haversine_km
 
 
 def radio_horizon_km(antenna_height_m: float, vessel_antenna_height_m: float = 10.0) -> float:
